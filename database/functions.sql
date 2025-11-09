@@ -3,7 +3,7 @@ RETURNS BOOLEAN LANGUAGE plpgsql AS $$
 BEGIN
   INSERT INTO approval (request_id, approver_id, decision, note, decided_at) VALUES 
   (temp_request_id, temp_approver_id, 'YES', temp_note, now());
-  UPDATE budget_request SET status = 'APPROVED' WHERE request_id = p_request_id;
+  UPDATE budget_request SET status = 'APPROVED' WHERE request_id = temp_request_id;
   RETURN TRUE;
 EXCEPTION WHEN OTHERS THEN
   RETURN FALSE;
