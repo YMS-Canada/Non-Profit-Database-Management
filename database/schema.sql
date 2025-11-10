@@ -73,6 +73,8 @@ CREATE TABLE event (
 
 CREATE TABLE expense (
     expense_id SERIAL PRIMARY KEY,
+    event_id INT,
+    category_id INT,
     FOREIGN KEY (event_id) REFERENCES event (event_id),
     FOREIGN KEY (category_id) REFERENCES category (category_id),
     vendor VARCHAR(100) NOT NULL,
@@ -88,6 +90,7 @@ CREATE TABLE expense (
 
 CREATE TABLE receipt(
     receipt_id SERIAL PRIMARY KEY,
+    expense_id INT,
     FOREIGN KEY (expense_id) REFERENCES expense (expense_id),
     file_path VARCHAR(100),
     uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
@@ -95,19 +98,23 @@ CREATE TABLE receipt(
 
 CREATE TABLE petty_cash_statement(
     pcs_id SERIAL PRIMARY KEY,
-    FOREIGN KEY (city_id) REFERENCES city (city_id),
     month VARCHAR(20) NOT NULL,
     opening_balance NUMERIC(10, 2) NOT NULL,
     total_spent NUMERIC(10, 2) NOT NULL,
     closing_balance NUMERIC(10, 2) NOT NULL,
     carried_forward NUMERIC(10, 2) NOT NULL,
     cash_in_hand NUMERIC(10, 2) NOT NULL,
-    FOREIGN KEY(prepared_by) REFERENCES users(name),
-    FOREIGN KEY(approved_by) REFERENCES users(name)
+    city_id INT,
+    prepared_by INT,
+    approved_by INT,
+    FOREIGN KEY (city_id) REFERENCES city (city_id),
+    FOREIGN KEY(prepared_by) REFERENCES users(users_id),
+    FOREIGN KEY(approved_by) REFERENCES users(users_id)
 );
 
 CREATE TABLE petty_cash_expense(
     pcx_id SERIAL PRIMARY KEY,
+    pcs_id INT,
     FOREIGN KEY(pcs_id) REFERENCES petty_cash_statement(pcs_id),
     event VARCHAR(100) NOT NULL,
     nature_of_expense VARCHAR(100) NOT NULL,
@@ -124,6 +131,7 @@ CREATE TABLE petty_cash_expense(
 
 CREATE TABLE cash_collection(
     collection_id SERIAL PRIMARY KEY,
+    city_id INT,
     FOREIGN KEY(city_id) REFERENCES city(city_id),
     event VARCHAR(100) NOT NULL,
     amount_collected NUMERIC(10, 2) NOT NULL,
@@ -132,20 +140,23 @@ CREATE TABLE cash_collection(
 );
 
 CREATE TABLE deposit(
-   deposit_id SERIAL PRIMARY KEY,
-   FOREIGN KEY(collection_id) REFERENCES cash_collection(collection_id),
-   bank_ref VARCHAR(100) NOT NULL,
-   deposited_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-   slip_path VARCHAR(100)
+    deposit_id SERIAL PRIMARY KEY,
+    collection_id INT,
+    FOREIGN KEY(collection_id) REFERENCES cash_collection(collection_id),
+    bank_ref VARCHAR(100) NOT NULL,
+    deposited_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    slip_path VARCHAR(100)
 );
 
 CREATE TABLE disbursement(
-   disb_id SERIAL PRIMARY KEY,
-   FOREIGN KEY(city_id) REFERENCES city(city_id),
-   amount NUMERIC(10, 2) NOT NULL,
-   method VARCHAR(100) NOT NULL,
-   sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-   ref_no INTEGER,
-   reason VARCHAR(100),
-   FOREIGN KEY(request_id) REFERENCES budget_request(request_id)
+    disb_id SERIAL PRIMARY KEY,
+    amount NUMERIC(10, 2) NOT NULL,
+    method VARCHAR(100) NOT NULL,
+    sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    ref_no INTEGER,
+    reason VARCHAR(100),
+    city_id INT,
+    request_id INT,
+    FOREIGN KEY(city_id) REFERENCES city(city_id),
+    FOREIGN KEY(request_id) REFERENCES budget_request(request_id)
 );
