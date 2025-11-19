@@ -1,4 +1,6 @@
-from django.urls import path
+from django.urls import path, include
+
+from . import views
 from .views import auth_views, budget_views, admin_views, report_views
 
 urlpatterns = [
@@ -17,4 +19,6 @@ urlpatterns = [
 
     # Reports
     path('reports/monthly/', report_views.monthly_report, name='monthly_report'),
+    path('dashboard/', views.dashboard, name='dashboard'),
+    path('api/', include('api.urls')),
 ]

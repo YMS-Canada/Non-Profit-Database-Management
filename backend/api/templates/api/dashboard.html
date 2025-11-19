@@ -1,0 +1,82 @@
+{% if user.is_authenticated and user.role == 'ADMIN' %}
+<h1>Admin Dashboard</h1>
+
+<h2>Pending Requests</h2>
+<table border="1">
+    <thead>
+        <tr>
+            <th>Request ID</th>
+            <th>City</th>
+            <th>Month</th>
+            <th>Description</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for request in pending_requests %}
+        <tr>
+            <td>{{ request.request_id }}</td>
+            <td>{{ request.city }}</td>
+            <td>{{ request.month }}</td>
+            <td>{{ request.description }}</td>
+            <td>{{ request.status }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<h2>Audit Logs</h2>
+<ul>
+    {% for log in audit_logs %}
+    <li>{{ log }}</li>
+    {% endfor %}
+</ul>
+
+{% elif user.is_authenticated %}
+<h1>User Dashboard</h1>
+
+<h2>Your Requests</h2>
+<table border="1">
+    <thead>
+        <tr>
+            <th>Request ID</th>
+            <th>Month</th>
+            <th>Description</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for request in user_requests %}
+        <tr>
+            <td>{{ request.request_id }}</td>
+            <td>{{ request.month }}</td>
+            <td>{{ request.description }}</td>
+            <td>{{ request.status }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<h2>Approvals</h2>
+<table border="1">
+    <thead>
+        <tr>
+            <th>Request ID</th>
+            <th>Status</th>
+            <th>Updated At</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for approval in approvals %}
+        <tr>
+            <td>{{ approval.request_id }}</td>
+            <td>{{ approval.status }}</td>
+            <td>{{ approval.updated_at }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% else %}
+<p>You must be logged in to view the dashboard.</p>
+{% endif %}
