@@ -11,4 +11,7 @@ urlpatterns = [
     path('budget-requests/', budget_views.budget_request_list, name='budget_request_list'),
 
     path('api/budget-requests/', budget_api.api_budget_list, name='api_budget_list'),
+    path('api/budget-requests/', budget_api.api_budget_create, name='api_budget_create'),
+    path('api/budget-requests/<int:request_id>/approve', budget_api.api_budget_approve, name='api_budget_approve'),
+    path('api/budget-requests/<int:request_id>/reject', budget_api.api_budget_reject, name='api_budget_reject'),
 ]

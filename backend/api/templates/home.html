@@ -21,9 +21,11 @@
     {% endif %}
 
     {% if role == 'ADMIN' %}
-      <li><a href="{% url 'pending_requests' %}">Pending Budget Requests</a></li>
-      <li><a href="{% url 'create_account' %}">Create User Account</a></li>
-      <li><a href="{% url 'monthly_report' %}">Monthly Report</a></li>
+      <!-- For now, reuse the same pages for admins -->
+      <li><a href="{% url 'budget_request_list' %}">All Budget Requests</a></li>
+      <li><a href="{% url 'new_budget' %}">Submit New Budget Request</a></li>
+      <!-- If you later add URLs named 'create_account' or 'monthly_report',
+           you can re-enable links to them here. -->
     {% endif %}
   </ul>
 </body>
