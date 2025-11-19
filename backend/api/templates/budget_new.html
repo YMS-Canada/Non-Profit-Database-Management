@@ -6,14 +6,59 @@
 <body>
   <h1>Submit Budget Request</h1>
 
+  {% if messages %}
+    <ul>
+      {% for message in messages %}
+        <li>{{ message }}</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+
   <form method="POST">
     {% csrf_token %}
 
-    <label>Month:</label><br>
-    <input type="date" name="month" required><br><br>
+    <fieldset>
+      <legend>Request Details</legend>
+      <label>Month:</label><br>
+      <input type="date" name="month" required><br><br>
 
-    <label>Description:</label><br>
-    <textarea name="description" rows="4" cols="50"></textarea><br><br>
+      <label>Description:</label><br>
+      <textarea name="description" rows="3" cols="60"></textarea>
+    </fieldset>
+
+    <fieldset>
+      <legend>Event</legend>
+      <label>Event Name:</label><br>
+      <input type="text" name="event_name" required><br><br>
+
+      <label>Event Date:</label><br>
+      <input type="date" name="event_date" required><br><br>
+
+      <label>Event Notes:</label><br>
+      <textarea name="event_notes" rows="3" cols="60"></textarea>
+    </fieldset>
+
+    <fieldset>
+      <legend>Breakdown Lines</legend>
+      <p>Provide up to three line items (category, description, amount).</p>
+      {% for _ in line_range %}
+        <div style="margin-bottom: 1rem;">
+          <label>Category:</label><br>
+          <select name="line_category">
+            <option value="">-- optional --</option>
+            {% for category in categories %}
+              <option value="{{ category.0 }}">{{ category.1 }}</option>
+            {% endfor %}
+          </select><br>
+
+          <label>Description:</label><br>
+          <input type="text" name="line_description" size="50"><br>
+
+          <label>Amount (CAD):</label><br>
+          <input type="number" name="line_amount" step="0.01" min="0">
+        </div>
+      {% endfor %}
+    </fieldset>
 
     <button type="submit">Submit</button>
   </form>
