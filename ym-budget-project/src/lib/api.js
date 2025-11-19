@@ -10,3 +10,13 @@ export async function fetchBudgetRequests() {
   }
   return res.json();
 }
+
+export async function getBudgetRequests() {
+  const res = await fetch("http://127.0.0.1:8000/api/budget-requests/", {
+    method: "GET",
+    credentials: "include",   // 🔥 REQUIRED
+  });
+
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}

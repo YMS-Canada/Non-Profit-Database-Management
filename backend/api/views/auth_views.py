@@ -35,9 +35,6 @@ def login_view(request):
         email = request.POST.get('email', '').strip()
         password = request.POST.get('password', '').strip()
 
-        # NOTE: for this course, we compare plain text.
-        # Your seed.sql currently stores 'random123' etc directly.
-        # For real-world use, you'd hash this before storing/comparing.
         with connection.cursor() as cur:
             cur.execute("""
                 SELECT user_id, role, city_id
@@ -56,11 +53,9 @@ def login_view(request):
         request.session['role'] = row[1]
         request.session['city_id'] = row[2]
 
-        # Redirect based on role
-        if row[1] == 'ADMIN':
-            return redirect('pending_requests')
-        else:
-            return redirect('budget_request_list')
+        # ✅ redirect to a real route name
+        return redirect('budget_request_list')
+        # or: return redirect('home')
 
     return render(request, 'login.html')
 

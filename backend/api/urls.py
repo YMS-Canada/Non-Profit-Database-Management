@@ -10,6 +10,5 @@ urlpatterns = [
     path('budget/new/', budget_views.new_budget, name='new_budget'),
     path('budget-requests/', budget_views.budget_request_list, name='budget_request_list'),
 
-    # 👇 NEW API ENDPOINT FOR REACT
     path('api/budget-requests/', budget_api.api_budget_list, name='api_budget_list'),
 ]

@@ -49,6 +49,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",   # CRA
     #"http://localhost:5173",   # Vite
 ]
+CORS_ALLOW_CREDENTIALS = True
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
