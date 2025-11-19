@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>YM Finance System</title>
+</head>
+<body>
+  <h1>YM Finance System</h1>
+
+  {% if user_id %}
+    <p>Logged in as: {{ role }}</p>
+    <p><a href="{% url 'logout' %}">Logout</a></p>
+  {% else %}
+    <p><a href="{% url 'login' %}">Login</a></p>
+  {% endif %}
+
+  <h2>Navigation</h2>
+  <ul>
+    {% if role == 'TREASURER' %}
+      <li><a href="{% url 'budget_request_list' %}">My Budget Requests</a></li>
+      <li><a href="{% url 'new_budget' %}">Submit New Budget Request</a></li>
+    {% endif %}
+
+    {% if role == 'ADMIN' %}
+      <li><a href="{% url 'pending_requests' %}">Pending Budget Requests</a></li>
+      <li><a href="{% url 'create_account' %}">Create User Account</a></li>
+      <li><a href="{% url 'monthly_report' %}">Monthly Report</a></li>
+    {% endif %}
+  </ul>
+</body>
+</html>

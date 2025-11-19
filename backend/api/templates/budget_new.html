@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>New Budget Request</title>
+</head>
+<body>
+  <h1>Submit Budget Request</h1>
+
+  <form method="POST">
+    {% csrf_token %}
+
+    <label>Month:</label><br>
+    <input type="date" name="month" required><br><br>
+
+    <label>Description:</label><br>
+    <textarea name="description" rows="4" cols="50"></textarea><br><br>
+
+    <button type="submit">Submit</button>
+  </form>
+
+  <p><a href="{% url 'budget_request_list' %}">Back to My Requests</a></p>
+  <p><a href="{% url 'home' %}">Home</a></p>
+</body>
+</html>

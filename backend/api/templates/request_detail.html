@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Request Detail</title>
+</head>
+<body>
+  <h1>Budget Request Detail</h1>
+
+  {% if req %}
+    <p><strong>ID:</strong> {{ req.0 }}</p>
+    <p><strong>City:</strong> {{ req.1 }}</p>
+    <p><strong>Month:</strong> {{ req.2 }}</p>
+    <p><strong>Description:</strong> {{ req.3 }}</p>
+    <p><strong>Status:</strong> {{ req.4 }}</p>
+    <p><strong>Requester:</strong> {{ req.5 }}</p>
+  {% else %}
+    <p>Request not found.</p>
+  {% endif %}
+
+  <h2>Requested Events</h2>
+  <table border="1" cellpadding="5">
+    <tr>
+      <th>Event ID</th>
+      <th>Name</th>
+      <th>Date</th>
+      <th>Total Amount</th>
+    </tr>
+    {% for e in events %}
+      <tr>
+        <td>{{ e.0 }}</td>
+        <td>{{ e.1 }}</td>
+        <td>{{ e.2 }}</td>
+        <td>{{ e.3 }}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="4">No requested events.</td></tr>
+    {% endfor %}
+  </table>
+
+  <h2>Decision</h2>
+  <form method="POST">
+    {% csrf_token %}
+    <label>Note:</label><br>
+    <textarea name="note" rows="3" cols="50"></textarea><br><br>
+
+    <button type="submit" name="decision" value="APPROVE">Approve</button>
+    <button type="submit" name="decision" value="REJECT">Reject</button>
+  </form>
+
+  <p><a href="{% url 'pending_requests' %}">Back to Pending List</a></p>
+</body>
+</html>

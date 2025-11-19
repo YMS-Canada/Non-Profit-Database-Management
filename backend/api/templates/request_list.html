@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Pending Budget Requests</title>
+</head>
+<body>
+  <h1>Pending Budget Requests</h1>
+
+  <p><a href="{% url 'home' %}">Home</a></p>
+
+  <table border="1" cellpadding="5">
+    <tr>
+      <th>ID</th>
+      <th>City</th>
+      <th>Month</th>
+      <th>Description</th>
+      <th>Requester</th>
+      <th>Action</th>
+    </tr>
+    {% for r in rows %}
+      <tr>
+        <td>{{ r.0 }}</td>
+        <td>{{ r.1 }}</td>
+        <td>{{ r.2 }}</td>
+        <td>{{ r.3 }}</td>
+        <td>{{ r.5 }}</td>
+        <td><a href="{% url 'request_detail' r.0 %}">Review</a></td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="6">No pending requests.</td></tr>
+    {% endfor %}
+  </table>
+</body>
+</html>

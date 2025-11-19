@@ -1,0 +1,76 @@
+
+body {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: 'Lato', sans-serif;
+
+}
+
+.home {
+  display: flex;
+  flex-direction: column;   /* stack items vertically */
+  justify-content: center;  /* vertical centering */
+  align-items: center;      /* horizontal centering */
+  height: 90vh;
+  font-size: 3rem;
+  background-color: #14051c;
+  text-align: center;       /* center text inside elements */
+}
+.home h2 {
+  color: white; /* or any hex code like #a855f7 */
+  font-size: 4rem; /* optional: resize */
+}
+
+.admin,.form, .dashboard  {
+  margin-left: 20px; /* adjust value as needed */
+}
+.steps {
+  text-align: center;
+  padding: 40px 20px;
+  background-color: #f9f9f9;
+  margin: 20px 0;
+  border-radius: 8px;
+}
+
+.steps h2 {
+  font-size: 2rem;
+  color: #333;
+  margin-bottom: 20px;
+}
+
+.steps img {
+  max-width: 100%;
+  height: auto;
+  margin: 20px 0;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.steps a {
+  display: inline-block;
+  margin-top: 15px;
+  padding: 12px 24px;
+  background-color: #8000ff;
+  color: white;
+  text-decoration: none;
+  border-radius: 5px;
+  font-weight: bold;
+  transition: background-color 0.3s ease;
+}
+
+.steps a:hover {
+  background-color: #0056b3;
+}
+
+/* Optional: Responsive design */
+@media (max-width: 768px) {
+  .steps {
+      padding: 20px 10px;
+  }
+  
+  .steps h2 {
+      font-size: 1.5rem;
+  }
+}

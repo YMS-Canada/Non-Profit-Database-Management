@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>My Budget Requests</title>
+</head>
+<body>
+  <h1>My Budget Requests</h1>
+
+  <p><a href="{% url 'new_budget' %}">Submit New Request</a></p>
+  <p><a href="{% url 'home' %}">Home</a></p>
+
+  <table border="1" cellpadding="5">
+    <tr>
+      <th>ID</th>
+      <th>Month</th>
+      <th>Description</th>
+      <th>Status</th>
+      <th>Created At</th>
+    </tr>
+    {% for r in rows %}
+      <tr>
+        <td>{{ r.0 }}</td>
+        <td>{{ r.1 }}</td>
+        <td>{{ r.2 }}</td>
+        <td>{{ r.3 }}</td>
+        <td>{{ r.4 }}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="5">No requests yet.</td></tr>
+    {% endfor %}
+  </table>
+</body>
+</html>
