@@ -6,8 +6,10 @@ from .auth_views import get_current_user, require_login
 
 def _fetch_requests_for_user(user_id, role, city_id):
     """
-    Return rows (request_id, month, description, status, created_at, requester_name)
+    READ: Return rows (request_id, month, description, status, created_at, requester_name)
     scoped by role.
+    - ADMIN: sees all requests from all cities
+    - TREASURER: sees only their own requests
     """
     base_sql = """
         SELECT br.request_id,
@@ -21,14 +23,16 @@ def _fetch_requests_for_user(user_id, role, city_id):
     """
 
     if role == 'ADMIN':
-        sql = base_sql + " WHERE br.city_id = %s ORDER BY br.created_at DESC"
-        params = [city_id]
+        # Admin sees all requests (no filtering)
+        sql = base_sql + " ORDER BY br.created_at DESC"
+        params = []
     else:
+        # Treasurer sees only their own requests
         sql = (
             base_sql
-            + " WHERE br.requester_id = %s AND br.city_id = %s ORDER BY br.created_at DESC"
+            + " WHERE br.requester_id = %s ORDER BY br.created_at DESC"
         )
-        params = [user_id, city_id]
+        params = [user_id]
 
     with connection.cursor() as cur:
         cur.execute(sql, params)
@@ -36,6 +40,7 @@ def _fetch_requests_for_user(user_id, role, city_id):
 
 
 def budget_request_list(request):
+    """READ: List budget requests (role-based access)"""
     if not require_login(request):
         return redirect('login')
 
@@ -53,6 +58,7 @@ def budget_request_list(request):
 
 
 def new_budget(request):
+    """CREATE: Submit new budget request (Treasurer only, but Admin can also use)"""
     if not require_login(request):
         return redirect('login')
 

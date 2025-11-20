@@ -53,9 +53,13 @@ def login_view(request):
         request.session['role'] = row[1]
         request.session['city_id'] = row[2]
 
-        # ✅ redirect to a real route name
-        return redirect('budget_request_list')
-        # or: return redirect('home')
+        # Role-based redirect
+        if row[1] == 'ADMIN':
+            return redirect('admin_dashboard')
+        elif row[1] == 'TREASURER':
+            return redirect('treasurer_dashboard')
+        else:
+            return redirect('home')
 
     return render(request, 'login.html')
 
@@ -105,4 +109,128 @@ def create_account(request):
 
     return render(request, 'admin/create_account.html', {
         'cities': cities,
+    })
+
+
+# ---------- Dashboard Views ----------
+
+def admin_dashboard(request):
+    """Admin dashboard with overview of all requests and admin CRUD operations"""
+    if not require_role(request, 'ADMIN'):
+        return redirect('login')
+    
+    user_id, role, city_id = get_current_user(request)
+    
+    stats = {}
+    pending_requests = []
+    recent_activity = []
+    
+    with connection.cursor() as cur:
+        # Get statistics
+        cur.execute("""
+            SELECT 
+                COUNT(*) FILTER (WHERE status = 'PENDING') as pending_count,
+                COUNT(*) FILTER (WHERE status = 'APPROVED') as approved_count,
+                COUNT(*) FILTER (WHERE status = 'REJECTED') as rejected_count,
+                COUNT(*) as total_count
+            FROM budget_request;
+        """)
+        row = cur.fetchone()
+        stats = {
+            'pending': row[0] or 0,
+            'approved': row[1] or 0,
+            'rejected': row[2] or 0,
+            'total': row[3] or 0,
+        }
+        
+        # Get pending requests
+        cur.execute("""
+            SELECT br.request_id,
+                   c.name AS city_name,
+                   br.month,
+                   br.description,
+                   br.status,
+                   u.name AS requester_name,
+                   br.created_at
+            FROM budget_request br
+            JOIN city c ON c.city_id = br.city_id
+            LEFT JOIN users u ON u.user_id = br.requester_id
+            WHERE br.status = 'PENDING'
+            ORDER BY br.created_at DESC
+            LIMIT 10;
+        """)
+        pending_requests = cur.fetchall()
+        
+        # Get recent activity (all statuses)
+        cur.execute("""
+            SELECT br.request_id,
+                   c.name AS city_name,
+                   br.month,
+                   br.status,
+                   u.name AS requester_name,
+                   br.created_at
+            FROM budget_request br
+            JOIN city c ON c.city_id = br.city_id
+            LEFT JOIN users u ON u.user_id = br.requester_id
+            ORDER BY br.created_at DESC
+            LIMIT 10;
+        """)
+        recent_activity = cur.fetchall()
+    
+    return render(request, 'admin/admin_dashboard.html', {
+        'role': role,
+        'stats': stats,
+        'pending_requests': pending_requests,
+        'recent_activity': recent_activity,
+    })
+
+
+def treasurer_dashboard(request):
+    """Treasurer dashboard with their city's budget requests"""
+    if not require_role(request, 'TREASURER'):
+        return redirect('login')
+    
+    user_id, role, city_id = get_current_user(request)
+    
+    stats = {}
+    my_requests = []
+    
+    with connection.cursor() as cur:
+        # Get statistics for this treasurer's city
+        cur.execute("""
+            SELECT 
+                COUNT(*) FILTER (WHERE status = 'PENDING') as pending_count,
+                COUNT(*) FILTER (WHERE status = 'APPROVED') as approved_count,
+                COUNT(*) FILTER (WHERE status = 'REJECTED') as rejected_count,
+                COUNT(*) as total_count
+            FROM budget_request
+            WHERE city_id = %s AND requester_id = %s;
+        """, [city_id, user_id])
+        row = cur.fetchone()
+        stats = {
+            'pending': row[0] or 0,
+            'approved': row[1] or 0,
+            'rejected': row[2] or 0,
+            'total': row[3] or 0,
+        }
+        
+        # Get this treasurer's requests
+        cur.execute("""
+            SELECT br.request_id,
+                   c.name AS city_name,
+                   br.month,
+                   br.description,
+                   br.status,
+                   br.created_at
+            FROM budget_request br
+            JOIN city c ON c.city_id = br.city_id
+            WHERE br.requester_id = %s
+            ORDER BY br.created_at DESC;
+        """, [user_id])
+        my_requests = cur.fetchall()
+    
+    return render(request, 'treasurer/treasurer_dashboard.html', {
+        'role': role,
+        'stats': stats,
+        'my_requests': my_requests,
     })

@@ -9,6 +9,11 @@ from .auth_views import get_current_user, require_login, require_role
 
 
 def _list_requests_for_api(user_id, role, city_id):
+    """
+    Returns list of budget requests as dicts.
+    - ADMIN: sees all requests from all cities
+    - TREASURER: sees only their own requests
+    """
     base_sql = """
         SELECT br.request_id,
                br.month,
@@ -21,14 +26,16 @@ def _list_requests_for_api(user_id, role, city_id):
     """
     params = []
     if role == 'ADMIN':
-        sql = base_sql + " WHERE br.city_id = %s ORDER BY br.created_at DESC"
-        params = [city_id]
+        # Admin sees all requests (no filtering)
+        sql = base_sql + " ORDER BY br.created_at DESC"
+        params = []
     else:
+        # Treasurer sees only their own requests
         sql = (
             base_sql
-            + " WHERE br.requester_id = %s AND br.city_id = %s ORDER BY br.created_at DESC"
+            + " WHERE br.requester_id = %s ORDER BY br.created_at DESC"
         )
-        params = [user_id, city_id]
+        params = [user_id]
 
     with connection.cursor() as cur:
         cur.execute(sql, params)
@@ -49,6 +56,17 @@ def _list_requests_for_api(user_id, role, city_id):
 
 @csrf_exempt
 def api_budget_requests(request):
+    """
+    JSON API endpoint for budget requests.
+    
+    GET: Returns list of budget requests (role-based filtering)
+         - ADMIN: sees all requests
+         - TREASURER: sees only their own requests
+    
+    POST: Creates new budget request with event and breakdown lines
+          Required fields: month, event.name, event.event_date
+          Returns: { request_id, req_event_id, status: "PENDING" }
+    """
     if not require_login(request):
         return JsonResponse({'detail': 'Unauthorized'}, status=401)
 
@@ -171,22 +189,28 @@ api_budget_list = api_budget_requests
 api_budget_create = api_budget_requests
 
 
-def _update_request_status(request_id, city_id, new_status, decision, approver_id):
+def _update_request_status(request_id, new_status, decision, approver_id):
+    """
+    Updates budget_request status and inserts approval record.
+    Returns JsonResponse with request_id and new status.
+    """
     with connection.cursor() as cur:
+        # Check if request exists
         cur.execute(
-            "SELECT city_id FROM budget_request WHERE request_id = %s",
+            "SELECT request_id FROM budget_request WHERE request_id = %s",
             [request_id],
         )
         row = cur.fetchone()
         if not row:
             return JsonResponse({'detail': 'Request not found'}, status=404)
-        if row[0] != city_id:
-            return JsonResponse({'detail': 'Forbidden'}, status=403)
 
+        # Update status
         cur.execute(
             "UPDATE budget_request SET status = %s WHERE request_id = %s",
             [new_status, request_id],
         )
+        
+        # Insert approval record
         cur.execute(
             """
             INSERT INTO approval (request_id, approver_id, decision, note, decided_at)
@@ -200,12 +224,16 @@ def _update_request_status(request_id, city_id, new_status, decision, approver_i
 @csrf_exempt
 @require_POST
 def api_budget_approve(request, request_id):
+    """
+    ADMIN-only: Approve a budget request via API.
+    Returns JSON { request_id, status: "APPROVED" }
+    """
     if not require_role(request, 'ADMIN'):
         return JsonResponse({'detail': 'Forbidden'}, status=403)
 
-    user_id, _, city_id = get_current_user(request)
+    user_id, _, _ = get_current_user(request)
     response = _update_request_status(
-        request_id, city_id, 'APPROVED', 'YES', user_id
+        request_id, 'APPROVED', 'YES', user_id
     )
     return response
 
@@ -213,11 +241,15 @@ def api_budget_approve(request, request_id):
 @csrf_exempt
 @require_POST
 def api_budget_reject(request, request_id):
+    """
+    ADMIN-only: Reject a budget request via API.
+    Returns JSON { request_id, status: "REJECTED" }
+    """
     if not require_role(request, 'ADMIN'):
         return JsonResponse({'detail': 'Forbidden'}, status=403)
 
-    user_id, _, city_id = get_current_user(request)
+    user_id, _, _ = get_current_user(request)
     response = _update_request_status(
-        request_id, city_id, 'REJECTED', 'NO-PLEASE RESEND', user_id
+        request_id, 'REJECTED', 'NO-PLEASE RESEND', user_id
     )
     return response

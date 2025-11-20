@@ -1,28 +1,70 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Monthly Requested Totals</title>
+  <title>Monthly Reports - YM Finance</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
+    .container { max-width: 1200px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 20px; }
+    h1 { margin: 0; color: #333; }
+    .subtitle { color: #666; margin-top: 5px; }
+    .actions { display: flex; gap: 10px; }
+    .btn { padding: 10px 20px; text-decoration: none; border-radius: 4px; font-weight: bold; }
+    .btn-secondary { background: #6c757d; color: white; }
+    .btn-secondary:hover { background: #5a6268; }
+    .btn-primary { background: #007bff; color: white; }
+    .btn-primary:hover { background: #0056b3; }
+    .summary { background: #f8f9fa; padding: 15px; border-radius: 4px; margin-bottom: 20px; color: #666; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+    th { background-color: #f5f5f5; font-weight: bold; color: #333; }
+    tr:hover { background-color: #f9f9f9; }
+    .amount { text-align: right; font-weight: bold; color: #28a745; }
+    .empty-state { text-align: center; padding: 40px; color: #666; }
+  </style>
 </head>
 <body>
-  <h1>Monthly Requested Totals per City</h1>
+  <div class="container">
+    <div class="header">
+      <div>
+        <h1>Monthly Budget Reports</h1>
+        <div class="subtitle">Total Requested Amount by City and Month</div>
+      </div>
+      <div class="actions">
+        <a href="{% url 'pending_requests' %}" class="btn btn-primary">Pending Requests</a>
+        <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary">← Dashboard</a>
+      </div>
+    </div>
 
-  <p><a href="{% url 'home' %}">Home</a></p>
+    {% if rows %}
+      <div class="summary">
+        <strong>Report Summary:</strong> Showing {{ rows|length }} month-city combinations
+      </div>
 
-  <table border="1" cellpadding="5">
-    <tr>
-      <th>City</th>
-      <th>Month</th>
-      <th>Total Requested</th>
-    </tr>
-    {% for r in rows %}
-      <tr>
-        <td>{{ r.0 }}</td>
-        <td>{{ r.1 }}</td>
-        <td>{{ r.2 }}</td>
-      </tr>
-    {% empty %}
-      <tr><td colspan="3">No data.</td></tr>
-    {% endfor %}
-  </table>
+      <table>
+        <thead>
+          <tr>
+            <th>City</th>
+            <th>Month</th>
+            <th class="amount">Total Requested ($)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in rows %}
+          <tr>
+            <td>{{ r.0 }}</td>
+            <td>{{ r.1 }}</td>
+            <td class="amount">${{ r.2|floatformat:2|default:"0.00" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <div class="empty-state">
+        <h2>No data available</h2>
+        <p>Budget requests will appear here once they are submitted.</p>
+      </div>
+    {% endif %}
+  </div>
 </body>
 </html>

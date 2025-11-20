@@ -1,34 +1,63 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Pending Budget Requests</title>
+  <title>Pending Budget Requests - YM Finance</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
+    .container { max-width: 1400px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 20px; }
+    h1 { margin: 0; color: #333; }
+    .actions a { padding: 10px 20px; background: #6c757d; color: white; text-decoration: none; border-radius: 4px; font-weight: bold; }
+    .actions a:hover { background: #5a6268; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+    th { background-color: #f5f5f5; font-weight: bold; color: #333; }
+    tr:hover { background-color: #f9f9f9; }
+    .btn-review { padding: 6px 12px; background: #007bff; color: white; text-decoration: none; border-radius: 4px; font-size: 14px; }
+    .btn-review:hover { background: #0056b3; }
+    .empty-state { text-align: center; padding: 40px; color: #666; }
+  </style>
 </head>
 <body>
-  <h1>Pending Budget Requests</h1>
+  <div class="container">
+    <div class="header">
+      <h1>Pending Budget Requests</h1>
+      <div class="actions">
+        <a href="{% url 'admin_dashboard' %}">← Back to Dashboard</a>
+      </div>
+    </div>
 
-  <p><a href="{% url 'home' %}">Home</a></p>
-
-  <table border="1" cellpadding="5">
-    <tr>
-      <th>ID</th>
-      <th>City</th>
-      <th>Month</th>
-      <th>Description</th>
-      <th>Requester</th>
-      <th>Action</th>
-    </tr>
-    {% for r in rows %}
-      <tr>
-        <td>{{ r.0 }}</td>
-        <td>{{ r.1 }}</td>
-        <td>{{ r.2 }}</td>
-        <td>{{ r.3 }}</td>
-        <td>{{ r.5 }}</td>
-        <td><a href="{% url 'request_detail' r.0 %}">Review</a></td>
-      </tr>
-    {% empty %}
-      <tr><td colspan="6">No pending requests.</td></tr>
-    {% endfor %}
-  </table>
+    {% if rows %}
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>City</th>
+            <th>Month</th>
+            <th>Description</th>
+            <th>Requester</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in rows %}
+          <tr>
+            <td>{{ r.0 }}</td>
+            <td>{{ r.1 }}</td>
+            <td>{{ r.2 }}</td>
+            <td>{{ r.3|truncatewords:15 }}</td>
+            <td>{{ r.5|default:"—" }}</td>
+            <td><a href="{% url 'request_detail' r.0 %}" class="btn-review">Review</a></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <div class="empty-state">
+        <h2>No pending requests</h2>
+        <p>All budget requests have been reviewed.</p>
+      </div>
+    {% endif %}
+  </div>
 </body>
 </html>

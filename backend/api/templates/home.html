@@ -2,31 +2,75 @@
 <html>
 <head>
   <title>YM Finance System</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
+    .container { max-width: 1200px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 20px; }
+    h1 { margin: 0; color: #333; }
+    .user-info { text-align: right; color: #666; }
+    .nav-menu { margin-top: 30px; }
+    .nav-menu h2 { color: #333; margin-bottom: 15px; }
+    .nav-menu ul { list-style: none; padding: 0; }
+    .nav-menu li { margin: 10px 0; }
+    .nav-menu a { 
+      display: inline-block; 
+      padding: 12px 20px; 
+      background: #007bff; 
+      color: white; 
+      text-decoration: none; 
+      border-radius: 4px; 
+      transition: background 0.3s;
+    }
+    .nav-menu a:hover { background: #0056b3; }
+    .btn-logout { color: #dc3545; text-decoration: none; font-weight: bold; }
+    .btn-logout:hover { text-decoration: underline; }
+    .btn-login { 
+      padding: 10px 20px; 
+      background: #28a745; 
+      color: white; 
+      text-decoration: none; 
+      border-radius: 4px; 
+      display: inline-block;
+    }
+    .btn-login:hover { background: #218838; }
+  </style>
 </head>
 <body>
-  <h1>YM Finance System</h1>
+  <div class="container">
+    <div class="header">
+      <h1>YM Finance System</h1>
+      <div class="user-info">
+        {% if user_id %}
+          <p>Logged in as: <strong>{{ role }}</strong></p>
+          <a href="{% url 'logout' %}" class="btn-logout">Logout</a>
+        {% else %}
+          <a href="{% url 'login' %}" class="btn-login">Login</a>
+        {% endif %}
+      </div>
+    </div>
 
-  {% if user_id %}
-    <p>Logged in as: {{ role }}</p>
-    <p><a href="{% url 'logout' %}">Logout</a></p>
-  {% else %}
-    <p><a href="{% url 'login' %}">Login</a></p>
-  {% endif %}
+    <div class="nav-menu">
+      <h2>Quick Access</h2>
+      <ul>
+        {% if role == 'TREASURER' %}
+          <li><a href="{% url 'treasurer_dashboard' %}">My Dashboard</a></li>
+          <li><a href="{% url 'budget_request_list' %}">My Budget Requests</a></li>
+          <li><a href="{% url 'new_budget' %}">Submit New Budget Request</a></li>
+        {% endif %}
 
-  <h2>Navigation</h2>
-  <ul>
-    {% if role == 'TREASURER' %}
-      <li><a href="{% url 'budget_request_list' %}">My Budget Requests</a></li>
-      <li><a href="{% url 'new_budget' %}">Submit New Budget Request</a></li>
-    {% endif %}
+        {% if role == 'ADMIN' %}
+          <li><a href="{% url 'admin_dashboard' %}">Admin Dashboard</a></li>
+          <li><a href="{% url 'pending_requests' %}">Review Pending Requests</a></li>
+          <li><a href="{% url 'budget_request_list' %}">All Budget Requests</a></li>
+          <li><a href="{% url 'create_account' %}">Create New User</a></li>
+          <li><a href="{% url 'monthly_report' %}">Monthly Reports</a></li>
+        {% endif %}
 
-    {% if role == 'ADMIN' %}
-      <!-- For now, reuse the same pages for admins -->
-      <li><a href="{% url 'budget_request_list' %}">All Budget Requests</a></li>
-      <li><a href="{% url 'new_budget' %}">Submit New Budget Request</a></li>
-      <!-- If you later add URLs named 'create_account' or 'monthly_report',
-           you can re-enable links to them here. -->
-    {% endif %}
-  </ul>
+        {% if not user_id %}
+          <li><a href="{% url 'login' %}">Please login to access the system</a></li>
+        {% endif %}
+      </ul>
+    </div>
+  </div>
 </body>
 </html>

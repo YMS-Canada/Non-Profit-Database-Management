@@ -3,6 +3,16 @@ from django.db import connection
 from .auth_views import require_role, get_current_user
 
 def monthly_report(request):
+    """
+    ADMIN-only: Monthly report showing aggregated budget data.
+    
+    Queries the vw_total_requested_per_city_month view to display:
+    - City name
+    - Month
+    - Total amount requested
+    
+    CRUD: READ (aggregated data, no write operations)
+    """
     if not require_role(request, 'ADMIN'):
         return redirect('login')
 

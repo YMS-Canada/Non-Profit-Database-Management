@@ -1,52 +1,116 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Request Detail</title>
+  <title>Budget Request Detail - YM Finance</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
+    .container { max-width: 1000px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .header { margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 20px; }
+    h1 { margin: 0; color: #333; }
+    h2 { color: #333; border-bottom: 1px solid #ddd; padding-bottom: 10px; margin-top: 30px; }
+    .info-grid { display: grid; grid-template-columns: 200px 1fr; gap: 15px; margin-bottom: 30px; background: #fafafa; padding: 20px; border-radius: 4px; }
+    .info-label { font-weight: bold; color: #666; }
+    .info-value { color: #333; }
+    .status { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; display: inline-block; }
+    .status-PENDING { background: #fff3cd; color: #856404; }
+    .status-APPROVED { background: #d4edda; color: #155724; }
+    .status-REJECTED { background: #f8d7da; color: #721c24; }
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+    th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+    th { background-color: #f5f5f5; font-weight: bold; color: #333; }
+    tr:hover { background-color: #f9f9f9; }
+    .decision-form { background: #fafafa; padding: 20px; border-radius: 4px; margin-top: 30px; }
+    label { display: block; font-weight: bold; color: #333; margin-bottom: 8px; }
+    textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; box-sizing: border-box; }
+    textarea:focus { outline: none; border-color: #007bff; }
+    .form-actions { display: flex; gap: 10px; margin-top: 15px; }
+    .btn { padding: 12px 24px; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; font-weight: bold; }
+    .btn-approve { background: #28a745; color: white; }
+    .btn-approve:hover { background: #218838; }
+    .btn-reject { background: #dc3545; color: white; }
+    .btn-reject:hover { background: #c82333; }
+    .back-link { margin-top: 30px; text-align: center; }
+    .back-link a { color: #007bff; text-decoration: none; }
+    .back-link a:hover { text-decoration: underline; }
+    .empty-state { text-align: center; padding: 20px; color: #666; }
+  </style>
 </head>
 <body>
-  <h1>Budget Request Detail</h1>
+  <div class="container">
+    <div class="header">
+      <h1>Budget Request Detail</h1>
+    </div>
 
-  {% if req %}
-    <p><strong>ID:</strong> {{ req.0 }}</p>
-    <p><strong>City:</strong> {{ req.1 }}</p>
-    <p><strong>Month:</strong> {{ req.2 }}</p>
-    <p><strong>Description:</strong> {{ req.3 }}</p>
-    <p><strong>Status:</strong> {{ req.4 }}</p>
-    <p><strong>Requester:</strong> {{ req.5 }}</p>
-  {% else %}
-    <p>Request not found.</p>
-  {% endif %}
+    {% if req %}
+      <div class="info-grid">
+        <div class="info-label">Request ID:</div>
+        <div class="info-value">{{ req.0 }}</div>
+        
+        <div class="info-label">City:</div>
+        <div class="info-value">{{ req.1 }}</div>
+        
+        <div class="info-label">Month:</div>
+        <div class="info-value">{{ req.2 }}</div>
+        
+        <div class="info-label">Description:</div>
+        <div class="info-value">{{ req.3|default:"—" }}</div>
+        
+        <div class="info-label">Status:</div>
+        <div class="info-value"><span class="status status-{{ req.4 }}">{{ req.4 }}</span></div>
+        
+        <div class="info-label">Requester:</div>
+        <div class="info-value">{{ req.5|default:"—" }}</div>
+      </div>
 
-  <h2>Requested Events</h2>
-  <table border="1" cellpadding="5">
-    <tr>
-      <th>Event ID</th>
-      <th>Name</th>
-      <th>Date</th>
-      <th>Total Amount</th>
-    </tr>
-    {% for e in events %}
-      <tr>
-        <td>{{ e.0 }}</td>
-        <td>{{ e.1 }}</td>
-        <td>{{ e.2 }}</td>
-        <td>{{ e.3 }}</td>
-      </tr>
-    {% empty %}
-      <tr><td colspan="4">No requested events.</td></tr>
-    {% endfor %}
-  </table>
+      <h2>Requested Events</h2>
+      {% if events %}
+        <table>
+          <thead>
+            <tr>
+              <th>Event ID</th>
+              <th>Name</th>
+              <th>Date</th>
+              <th>Total Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for e in events %}
+            <tr>
+              <td>{{ e.0 }}</td>
+              <td>{{ e.1 }}</td>
+              <td>{{ e.2 }}</td>
+              <td>${{ e.3|floatformat:2 }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <div class="empty-state">No events associated with this request.</div>
+      {% endif %}
 
-  <h2>Decision</h2>
-  <form method="POST">
-    {% csrf_token %}
-    <label>Note:</label><br>
-    <textarea name="note" rows="3" cols="50"></textarea><br><br>
+      <h2>Make Decision</h2>
+      <div class="decision-form">
+        <form method="POST">
+          {% csrf_token %}
+          <label for="note">Note (Optional):</label>
+          <textarea id="note" name="note" rows="4" placeholder="Add any notes about your decision..."></textarea>
 
-    <button type="submit" name="decision" value="APPROVE">Approve</button>
-    <button type="submit" name="decision" value="REJECT">Reject</button>
-  </form>
+          <div class="form-actions">
+            <button type="submit" name="decision" value="APPROVE" class="btn btn-approve">✓ Approve Request</button>
+            <button type="submit" name="decision" value="REJECT" class="btn btn-reject">✗ Reject Request</button>
+          </div>
+        </form>
+      </div>
+    {% else %}
+      <div class="empty-state">
+        <h2>Request not found</h2>
+        <p>The requested budget request could not be found.</p>
+      </div>
+    {% endif %}
 
-  <p><a href="{% url 'pending_requests' %}">Back to Pending List</a></p>
+    <div class="back-link">
+      <a href="{% url 'pending_requests' %}">← Back to Pending Requests</a>
+    </div>
+  </div>
 </body>
 </html>

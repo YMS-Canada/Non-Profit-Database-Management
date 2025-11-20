@@ -1,8 +1,10 @@
 from django.shortcuts import render, redirect
 from django.db import connection
+from django.contrib import messages
 from .auth_views import get_current_user, require_role
 
 def pending_requests(request):
+    """READ: List all pending budget requests (Admin only)"""
     if not require_role(request, 'ADMIN'):
         return redirect('login')
 
@@ -31,12 +33,14 @@ def pending_requests(request):
 
 
 def request_detail(request, request_id):
+    """READ + UPDATE: View and approve/reject budget requests (Admin only)"""
     if not require_role(request, 'ADMIN'):
         return redirect('login')
 
     user_id, role, _ = get_current_user(request)
 
     if request.method == 'POST':
+        # UPDATE operation
         decision = request.POST.get('decision')
         note = request.POST.get('note', '').strip()
 
@@ -45,15 +49,18 @@ def request_detail(request, request_id):
                 # Call your PL/pgSQL function
                 cur.execute("SELECT approve_request(%s, %s, %s);",
                             [request_id, user_id, note])
+                messages.success(request, f"Request #{request_id} has been approved.")
             elif decision == 'REJECT':
                 cur.execute("""
                     UPDATE budget_request
                     SET status = 'REJECTED'
                     WHERE request_id = %s
                 """, [request_id])
+                messages.warning(request, f"Request #{request_id} has been rejected.")
 
         return redirect('pending_requests')
 
+    # READ operation
     req = None
     events = []
 
