@@ -11,11 +11,11 @@ def _fetch_requests_for_user(user_id, role, city_id):
     """
     base_sql = """
         SELECT br.request_id,
-               br.month,
-               br.description,
-               br.status,
-               br.created_at,
-               u.name AS requester_name
+            br.month,
+            br.description,
+            br.status,
+            br.created_at,
+            u.name AS requester_name
         FROM budget_request br
         LEFT JOIN users u ON u.user_id = br.requester_id
     """
