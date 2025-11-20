@@ -6,6 +6,9 @@
 <body>
   <h1>Budget Requests</h1>
 
+  <p>Total rows: {{ rows|length }}</p>
+  <pre>{{ rows }}</pre>
+  
   {% if messages %}
     <ul>
       {% for message in messages %}
@@ -43,3 +46,4 @@
   </table>
 </body>
 </html>
+

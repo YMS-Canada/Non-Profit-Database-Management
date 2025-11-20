@@ -85,7 +85,10 @@ def api_budget_requests(request):
                 """,
                     [city_id, user_id, month, description],
                 )
-                request_id = cur.fetchone()[0]
+                row = cur.fetchone()
+                if not row:
+                    raise Exception("Failed to retrieve request_id after INSERT")
+                request_id = row[0]
 
                 cur.execute(
                     """
@@ -103,7 +106,10 @@ def api_budget_requests(request):
                         event.get('notes') or description,
                     ],
                 )
-                req_event_id = cur.fetchone()[0]
+                row = cur.fetchone()
+                if not row:
+                    raise Exception("Failed to retrieve req_event_id after INSERT")
+                req_event_id = row[0]
 
                 total_amount = 0
                 for line in breakdown:

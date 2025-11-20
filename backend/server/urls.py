@@ -19,5 +19,8 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include('api.urls')),
+
+    # HTML pages + JSON API are all inside api/urls.py
+    path('', include('api.urls')),          # HTML pages (user-facing)
+    path('api/', include('api.urls')),      # JSON API for React
 ]

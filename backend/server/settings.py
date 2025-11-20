@@ -9,9 +9,8 @@ https://docs.djangoproject.com/en/5.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
-
-from pathlib import Path
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -86,12 +85,32 @@ WSGI_APPLICATION = 'server.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': os.getenv('PG_DB'),
+#         'USER': os.getenv('PG_USER'),
+#         'PASSWORD': os.getenv('PG_PASSWORD'),
+#         'HOST': os.getenv('PG_HOST', 'localhost'),
+#         'PORT': os.getenv('PG_PORT', '5432'),
+#     }
+# }
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': 'yms_finance',
+#         'USER': 'yms_app',
+#         'PASSWORD': 'strong_password',
+#         'HOST': 'localhost',
+#         'PORT': '5432',
+#     }
+# }
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('PG_DB'),
-        'USER': os.getenv('PG_USER'),
-        'PASSWORD': os.getenv('PG_PASSWORD'),
+        'NAME': os.getenv('PG_DB', 'yms_finance'),
+        'USER': os.getenv('PG_USER', 'postgres'),
+        'PASSWORD': os.getenv('PG_PASSWORD', 'hello'),
         'HOST': os.getenv('PG_HOST', 'localhost'),
         'PORT': os.getenv('PG_PORT', '5432'),
     }

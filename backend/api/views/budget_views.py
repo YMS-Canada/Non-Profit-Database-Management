@@ -19,7 +19,7 @@ def _fetch_requests_for_user(user_id, role, city_id):
         FROM budget_request br
         LEFT JOIN users u ON u.user_id = br.requester_id
     """
-    params = []
+
     if role == 'ADMIN':
         sql = base_sql + " WHERE br.city_id = %s ORDER BY br.created_at DESC"
         params = [city_id]
@@ -143,6 +143,7 @@ def new_budget(request):
 
                 messages.success(request, "Budget request submitted.")
                 return redirect('budget_request_list')
+
             except Exception as exc:
                 messages.error(request, f"Could not save request: {exc}")
 
