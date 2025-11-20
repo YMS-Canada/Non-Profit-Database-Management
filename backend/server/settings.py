@@ -95,27 +95,27 @@ WSGI_APPLICATION = 'server.wsgi.application'
 #         'PORT': os.getenv('PG_PORT', '5432'),
 #     }
 # }
+
 # DATABASES = {
 #     'default': {
 #         'ENGINE': 'django.db.backends.postgresql',
-#         'NAME': 'yms_finance',
-#         'USER': 'yms_app',
-#         'PASSWORD': 'strong_password',
-#         'HOST': 'localhost',
-#         'PORT': '5432',
+#         'NAME': os.getenv('PG_DB', 'yms_finance'),
+#         'USER': os.getenv('PG_USER', 'postgres'),
+#         'PASSWORD': os.getenv('PG_PASSWORD', 'hello'),
+#         'HOST': os.getenv('PG_HOST', 'localhost'),
+#         'PORT': os.getenv('PG_PORT', '5432'),
 #     }
 # }
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': os.getenv('PG_DB', 'yms_finance'),
-        'USER': os.getenv('PG_USER', 'postgres'),
-        'PASSWORD': os.getenv('PG_PASSWORD', 'hello'),
+        'USER': os.getenv('PG_USER', 'yms_app'),
+        'PASSWORD': os.getenv('PG_PASSWORD', 'strong_password'),
         'HOST': os.getenv('PG_HOST', 'localhost'),
         'PORT': os.getenv('PG_PORT', '5432'),
     }
 }
-
 
 
 # Password validation
