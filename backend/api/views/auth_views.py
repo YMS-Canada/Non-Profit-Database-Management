@@ -1,6 +1,9 @@
 from django.shortcuts import render, redirect
 from django.db import connection
 from django.contrib import messages
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+import json
 
 # ---------- Helpers ----------
 
@@ -249,4 +252,83 @@ def treasurer_dashboard(request):
         'role': role,
         'stats': stats,
         'my_requests': my_requests,
+    })
+
+
+# ---------- API Endpoints ----------
+
+@csrf_exempt
+def api_login(request):
+    """JSON API endpoint for login from React"""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    
+    try:
+        data = json.loads(request.body)
+        email = data.get('email', '').strip()
+        password = data.get('password', '').strip()
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+    
+    if not email or not password:
+        return JsonResponse({'error': 'Email and password are required'}, status=400)
+    
+    with connection.cursor() as cur:
+        cur.execute("""
+            SELECT u.user_id, u.name, u.email, u.role, u.city_id, c.name as city_name
+            FROM users u
+            LEFT JOIN city c ON c.city_id = u.city_id
+            WHERE u.email = %s
+              AND u.password_hash = %s
+              AND u.is_active = TRUE
+        """, [email, password])
+        row = cur.fetchone()
+    
+    if not row:
+        return JsonResponse({'error': 'Invalid email or password'}, status=401)
+    
+    # Set session
+    request.session['user_id'] = row[0]
+    request.session['role'] = row[3]
+    request.session['city_id'] = row[4]
+    
+    return JsonResponse({
+        'user': {
+            'user_id': row[0],
+            'name': row[1],
+            'email': row[2],
+            'role': row[3],
+            'city_id': row[4],
+            'city_name': row[5],
+        }
+    })
+
+def api_current_user(request):
+    """API endpoint to get current logged-in user info"""
+    user_id, role, city_id = get_current_user(request)
+    
+    if not user_id:
+        return JsonResponse({'error': 'Not authenticated'}, status=401)
+    
+    with connection.cursor() as cur:
+        cur.execute("""
+            SELECT u.user_id, u.name, u.email, u.role, u.city_id, c.name as city_name
+            FROM users u
+            LEFT JOIN city c ON c.city_id = u.city_id
+            WHERE u.user_id = %s AND u.is_active = TRUE
+        """, [user_id])
+        row = cur.fetchone()
+    
+    if not row:
+        return JsonResponse({'error': 'User not found'}, status=404)
+    
+    return JsonResponse({
+        'user': {
+            'user_id': row[0],
+            'name': row[1],
+            'email': row[2],
+            'role': row[3],
+            'city_id': row[4],
+            'city_name': row[5],
+        }
     })

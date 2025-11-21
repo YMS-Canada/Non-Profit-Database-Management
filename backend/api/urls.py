@@ -25,6 +25,8 @@ urlpatterns = [
     path('admin/users/<int:user_id>/delete/', delete_views.delete_user, name='delete_user'),
 
     # ----- JSON API for React -----
+    path('api/login/', auth_views.api_login, name='api_login'),
+    path('api/current-user/', auth_views.api_current_user, name='api_current_user'),
     path('budget-requests/json/', budget_api.api_budget_requests, name='api_budget_requests'),
     path('budget-requests/<int:request_id>/approve/', budget_api.api_budget_approve, name='api_budget_approve'),
     path('budget-requests/<int:request_id>/reject/', budget_api.api_budget_reject, name='api_budget_reject'),

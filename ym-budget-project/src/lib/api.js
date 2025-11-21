@@ -1,9 +1,36 @@
 // src/lib/api.js
-const inferredHost =
-  typeof window !== 'undefined'
-    ? `${window.location.protocol}//${window.location.hostname}:8000`
-    : 'http://127.0.0.1:8000';
-const API_BASE = process.env.REACT_APP_API_URL || inferredHost;
+
+// Detect if we're in GitHub Codespaces and construct proper API URL
+function getApiBaseUrl() {
+  if (process.env.REACT_APP_API_URL) {
+    return process.env.REACT_APP_API_URL;
+  }
+  
+  // In development, use empty string to leverage proxy in package.json
+  if (process.env.NODE_ENV === 'development') {
+    return '';
+  }
+  
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    const protocol = window.location.protocol;
+    
+    // Check if we're in GitHub Codespaces (hostname pattern: xxx-3000.app.github.dev)
+    if (hostname.includes('app.github.dev') || hostname.includes('github.dev')) {
+      // Replace port 3000 with 8000 in the hostname
+      const backendHost = hostname.replace('-3000', '-8000');
+      return `${protocol}//${backendHost}`;
+    }
+    
+    // Local development
+    return `${protocol}//${hostname}:8000`;
+  }
+  
+  return 'http://127.0.0.1:8000';
+}
+
+const API_BASE = getApiBaseUrl();
+console.log('API_BASE URL:', API_BASE);
 
 async function handleResponse(res) {
   const text = await res.text();
@@ -25,6 +52,79 @@ async function handleResponse(res) {
   err.body = text;
   throw err;
 }
+
+// ---------- Auth API ----------
+
+export async function login(email, password) {
+  console.log('Attempting login to:', `${API_BASE}/api/login/`);
+  
+  try {
+    const res = await fetch(`${API_BASE}/api/login/`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({ email, password }),
+    });
+
+    console.log('Login response status:', res.status);
+
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({ error: 'Login failed' }));
+      throw new Error(error.error || 'Invalid email or password');
+    }
+
+    const data = await handleResponse(res);
+    const user = data.user || data;
+    localStorage.setItem('user', JSON.stringify(user));
+    return { user };
+  } catch (err) {
+    console.error('Login error:', err);
+    throw err;
+  }
+}
+
+export async function logout() {
+  const res = await fetch(`${API_BASE}/logout/`, {
+    method: 'GET',
+    credentials: 'include',
+  });
+  
+  localStorage.removeItem('user');
+  return res.ok;
+}
+
+export async function getCurrentUser() {
+  // Check localStorage first
+  const storedUser = localStorage.getItem('user');
+  if (storedUser) {
+    try {
+      return JSON.parse(storedUser);
+    } catch (e) {
+      localStorage.removeItem('user');
+    }
+  }
+
+  // If not in localStorage, verify session with backend
+  const res = await fetch(`${API_BASE}/api/current-user/`, {
+    method: 'GET',
+    credentials: 'include',
+    headers: { 'Accept': 'application/json' },
+  });
+
+  if (res.ok) {
+    const data = await handleResponse(res);
+    const user = data.user || data; // Handle both nested and flat response
+    localStorage.setItem('user', JSON.stringify(user));
+    return user;
+  }
+
+  throw new Error('Not authenticated');
+}
+
+// ---------- Budget API ----------
 
 export async function getBudgetRequests() {
   const res = await fetch(`${API_BASE}/api/budget-requests/`, {

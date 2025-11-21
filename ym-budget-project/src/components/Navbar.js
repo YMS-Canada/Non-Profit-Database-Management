@@ -1,15 +1,56 @@
-import React, {useState} from 'react'; // Import React and useState hook for state management
+import React, { useState, useEffect } from 'react'; // Import React and useState hook for state management
 import * as FaIcons from 'react-icons/fa'; // Import all FontAwesome icons as FaIcons
 import * as AiIcons from 'react-icons/ai'; // Import all Ant Design icons as AiIcons
-import { Link } from 'react-router-dom'; // Import Link for client-side navigation
+import { Link, useNavigate } from 'react-router-dom'; // Import Link for client-side navigation
 import {Sidebar} from './Sidebar'; // Import Sidebar data (menu items)
 import './Navbar.css'; // Import CSS for Navbar styling
 import { IconContext } from 'react-icons'; // Import IconContext to set icon properties globally
+import { logout } from '../lib/api';
 
 function Navbar() {
     const [sidebar, setSidebar] = useState(false); // State to track if sidebar is open
+    const [user, setUser] = useState(null);
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        // Check if user is logged in
+        const checkUser = () => {
+            const storedUser = localStorage.getItem('user');
+            if (storedUser) {
+                try {
+                    setUser(JSON.parse(storedUser));
+                } catch (e) {
+                    localStorage.removeItem('user');
+                    setUser(null);
+                }
+            } else {
+                setUser(null);
+            }
+        };
+        
+        checkUser();
+        
+        // Listen for storage changes (login/logout in other tabs)
+        window.addEventListener('storage', checkUser);
+        
+        return () => window.removeEventListener('storage', checkUser);
+    }, []);
 
     const showSidebar = () => setSidebar(!sidebar); // Toggle sidebar open/close
+
+    const handleLogout = async () => {
+        try {
+            await logout();
+            setUser(null);
+            navigate('/login');
+        } catch (err) {
+            console.error('Logout error:', err);
+            // Still clear local state and redirect
+            localStorage.removeItem('user');
+            setUser(null);
+            navigate('/login');
+        }
+    };
 
     return (
     <>
@@ -21,6 +62,22 @@ function Navbar() {
                 {/* Hamburger menu icon, opens sidebar on click */}
                 <FaIcons.FaBars onClick={showSidebar} />
             </Link>
+            
+            {/* Auth section in navbar */}
+            <div className="navbar-auth">
+                {user ? (
+                    <>
+                        <span className="user-name">👤 {user.name}</span>
+                        <button onClick={handleLogout} className="auth-button">
+                            Logout
+                        </button>
+                    </>
+                ) : (
+                    <Link to="/login" className="auth-button">
+                        Login
+                    </Link>
+                )}
+            </div>
         </div>
         {/* Sidebar navigation, active class when sidebar is open */}
         <nav className={sidebar ? 'nav-menu active' : 'nav-menu'} >

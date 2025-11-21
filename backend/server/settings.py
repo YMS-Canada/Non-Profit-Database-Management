@@ -45,10 +45,15 @@ INSTALLED_APPS = [
 ]
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",   # CRA
+    "http://localhost:3000",   # CRA local
     "http://127.0.0.1:3000",
+    "https://localhost:3000",
     #"http://localhost:5173",   # Vite
 ]
+
+# Allow all Codespaces URLs
+CORS_ALLOW_ALL_ORIGINS = os.getenv('CODESPACES', 'false').lower() == 'true'
+
 CORS_ALLOW_CREDENTIALS = True
 
 MIDDLEWARE = [
@@ -172,4 +177,14 @@ CSRF_COOKIE_SAMESITE = SESSION_COOKIE_SAMESITE
 CSRF_TRUSTED_ORIGINS = [
     'http://localhost:3000',
     'http://127.0.0.1:3000',
+    'https://localhost:3000',
 ]
+
+# Add Codespaces domains to trusted origins
+if os.getenv('CODESPACE_NAME'):
+    codespace_name = os.getenv('CODESPACE_NAME')
+    CSRF_TRUSTED_ORIGINS.extend([
+        f'https://{codespace_name}-3000.app.github.dev',
+        f'https://{codespace_name}-8000.app.github.dev',
+    ])
+
