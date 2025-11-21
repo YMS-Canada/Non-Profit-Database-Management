@@ -1,12 +1,14 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>New Budget Request - YM Finance</title>
+  <title>Edit Budget Request - YM Finance</title>
   <style>
     body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f3e5f5; }
     .container { max-width: 900px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
     .header { margin-bottom: 30px; border-bottom: 2px solid #6a1b9a; padding-bottom: 20px; }
     h1 { margin: 0; color: #6a1b9a; }
+    .alert { padding: 12px; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px; margin-bottom: 20px; }
+    .alert-info { background: #d1ecf1; border-color: #0c5460; color: #0c5460; }
     .messages { list-style: none; padding: 0; margin-bottom: 20px; }
     .messages li { padding: 12px; background: #f8d7da; color: #721c24; border-radius: 4px; margin-bottom: 10px; border-left: 4px solid #dc3545; }
     fieldset { border: 1px solid #ddd; border-radius: 8px; padding: 20px; margin-bottom: 20px; background: #fafafa; }
@@ -31,7 +33,7 @@
 <body>
   <div class="container">
     <div class="header">
-      <h1>Submit Budget Request</h1>
+      <h1>Edit Budget Request</h1>
     </div>
 
     {% if messages %}
@@ -42,28 +44,32 @@
       </ul>
     {% endif %}
 
+    <div class="alert">
+      <strong>Note:</strong> Editing this request will reset its status to PENDING for admin review.
+    </div>
+
     <form method="POST">
       {% csrf_token %}
 
       <fieldset>
         <legend>Request Details</legend>
         <label for="month">Month <span class="required">*</span></label>
-        <input type="date" id="month" name="month" required>
+        <input type="date" id="month" name="month" required value="{{ budget_req.2 }}">
 
         <label for="description">Description (Optional)</label>
-        <textarea id="description" name="description" rows="3" placeholder="Brief description of the budget request"></textarea>
+        <textarea id="description" name="description" rows="3" placeholder="Brief description of the budget request">{{ budget_req.3 }}</textarea>
       </fieldset>
 
       <fieldset>
         <legend>Event Information</legend>
         <label for="event_name">Event Name <span class="required">*</span></label>
-        <input type="text" id="event_name" name="event_name" required placeholder="e.g., Paint Night">
+        <input type="text" id="event_name" name="event_name" required placeholder="e.g., Paint Night" value="{{ event.1|default:'' }}">
 
         <label for="event_date">Event Date <span class="required">*</span></label>
-        <input type="date" id="event_date" name="event_date" required>
+        <input type="date" id="event_date" name="event_date" required value="{{ event.2|default:'' }}">
 
         <label for="event_notes">Event Notes (Optional)</label>
-        <textarea id="event_notes" name="event_notes" rows="3" placeholder="Additional information about the event"></textarea>
+        <textarea id="event_notes" name="event_notes" rows="3" placeholder="Additional information about the event">{{ event.3|default:'' }}</textarea>
       </fieldset>
 
       <fieldset>
@@ -76,21 +82,21 @@
             <select name="line_category">
               <option value="">-- Optional --</option>
               {% for category in categories %}
-                <option value="{{ category.0 }}">{{ category.1 }}</option>
+                <option value="{{ category.0 }}" {% if breakdown_lines|length > forloop.parentloop.counter0 and breakdown_lines|slice:forloop.parentloop.counter0|first|first == category.0 %}selected{% endif %}>{{ category.1 }}</option>
               {% endfor %}
             </select>
 
             <label>Description</label>
-            <input type="text" name="line_description" placeholder="e.g., Food and beverages">
+            <input type="text" name="line_description" placeholder="e.g., Food and beverages" value="{% if breakdown_lines|length > forloop.counter0 %}{{ breakdown_lines|slice:forloop.counter0|first|slice:'1:2'|first }}{% endif %}">
 
             <label>Amount (CAD)</label>
-            <input type="number" name="line_amount" step="0.01" min="0" placeholder="0.00">
+            <input type="number" name="line_amount" step="0.01" min="0" placeholder="0.00" value="{% if breakdown_lines|length > forloop.counter0 %}{{ breakdown_lines|slice:forloop.counter0|first|last }}{% endif %}">
           </div>
         {% endfor %}
       </fieldset>
 
       <div class="form-actions">
-        <button type="submit" class="btn btn-primary">Submit Request</button>
+        <button type="submit" class="btn btn-primary">Update Request</button>
         <a href="{% url 'budget_request_list' %}" class="btn btn-secondary">Cancel</a>
       </div>
     </form>

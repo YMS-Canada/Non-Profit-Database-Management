@@ -124,6 +124,7 @@ def admin_dashboard(request):
     stats = {}
     pending_requests = []
     recent_activity = []
+    monthly_report = []
     
     with connection.cursor() as cur:
         # Get statistics
@@ -176,12 +177,27 @@ def admin_dashboard(request):
             LIMIT 10;
         """)
         recent_activity = cur.fetchall()
+        
+        # Get monthly report - combining ALL APPROVED requests per city/month
+        cur.execute("""
+            SELECT c.name AS city,
+                   TO_CHAR(br.month, 'YYYY-MM') AS month,
+                   COALESCE(SUM(re.total_amount), 0) AS total_amount
+            FROM budget_request br
+            JOIN city c ON c.city_id = br.city_id
+            LEFT JOIN requested_event re ON re.request_id = br.request_id
+            WHERE br.status = 'APPROVED'
+            GROUP BY c.name, TO_CHAR(br.month, 'YYYY-MM')
+            ORDER BY TO_CHAR(br.month, 'YYYY-MM') DESC, c.name;
+        """)
+        monthly_report = cur.fetchall()
     
     return render(request, 'admin/admin_dashboard.html', {
         'role': role,
         'stats': stats,
         'pending_requests': pending_requests,
         'recent_activity': recent_activity,
+        'monthly_report': monthly_report,
     })
 
 

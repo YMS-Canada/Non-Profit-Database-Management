@@ -15,6 +15,7 @@ urlpatterns = [
     # ----- HTML budget pages -----
     path('budget/new/', budget_views.new_budget, name='new_budget'),
     path('budget-requests/', budget_views.budget_request_list, name='budget_request_list'),
+    path('budget-requests/<int:request_id>/edit/', budget_views.edit_budget, name='edit_budget'),
     path('budget-requests/<int:request_id>/delete/', delete_views.delete_budget_request, name='delete_budget_request'),
 
     # ----- Admin HTML pages -----

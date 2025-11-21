@@ -21,9 +21,15 @@ def monthly_report(request):
     rows = []
     with connection.cursor() as cur:
         cur.execute("""
-            SELECT city, month, total_requested
-            FROM vw_total_requested_per_city_month
-            ORDER BY month DESC, city;
+            SELECT c.name AS city,
+                   TO_CHAR(br.month, 'YYYY-MM') AS month,
+                   COALESCE(SUM(re.total_amount), 0) AS total_requested
+            FROM budget_request br
+            JOIN city c ON c.city_id = br.city_id
+            LEFT JOIN requested_event re ON re.request_id = br.request_id
+            WHERE br.status = 'APPROVED'
+            GROUP BY c.name, TO_CHAR(br.month, 'YYYY-MM')
+            ORDER BY TO_CHAR(br.month, 'YYYY-MM') DESC, c.name;
         """)
         rows = cur.fetchall()
 

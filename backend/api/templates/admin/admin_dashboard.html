@@ -3,23 +3,24 @@
 <head>
   <title>Admin Dashboard - YM Finance</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
+    body { font-family: Arial, sans-serif; margin: 20px; background: #f3e5f5; }
     .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
     .stats { display: flex; gap: 20px; margin-bottom: 30px; }
     .stat-card { 
-      background: #f5f5f5; 
+      background: white; 
       padding: 20px; 
       border-radius: 8px; 
       flex: 1;
       text-align: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
-    .stat-number { font-size: 32px; font-weight: bold; color: #333; }
+    .stat-number { font-size: 32px; font-weight: bold; color: #6a1b9a; }
     .stat-label { color: #666; margin-top: 5px; }
-    .section { margin-bottom: 30px; }
-    .section h2 { border-bottom: 2px solid #333; padding-bottom: 10px; }
+    .section { margin-bottom: 30px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .section h2 { border-bottom: 2px solid #6a1b9a; padding-bottom: 10px; color: #6a1b9a; }
     table { width: 100%; border-collapse: collapse; }
     th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
-    th { background-color: #f5f5f5; font-weight: bold; }
+    th { background-color: #f3e5f5; font-weight: bold; }
     .status { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
     .status-pending { background: #fff3cd; color: #856404; }
     .status-approved { background: #d4edda; color: #155724; }
@@ -29,22 +30,23 @@
       display: inline-block; 
       margin-right: 15px; 
       padding: 8px 16px; 
-      background: #007bff; 
+      background: #6a1b9a; 
       color: white; 
       text-decoration: none; 
       border-radius: 4px; 
     }
-    .nav-menu a:hover { background: #0056b3; }
+    .nav-menu a:hover { background: #4a148c; }
+    .amount { text-align: right; font-weight: bold; color: #6a1b9a; }
   </style>
 </head>
 <body>
   <div class="header">
     <div>
-      <h1>Admin Dashboard</h1>
+      <h1 style="color: #6a1b9a;">Admin Dashboard</h1>
       <p>Welcome, Administrator</p>
     </div>
     <div>
-      <a href="{% url 'logout' %}" style="color: #dc3545;">Logout</a>
+      <a href="{% url 'logout' %}" style="color: #dc3545; font-weight: bold;">Logout</a>
     </div>
   </div>
 
@@ -71,6 +73,33 @@
     <a href="{% url 'pending_requests' %}">Review Pending Requests</a>
     <a href="{% url 'create_account' %}">Create New User</a>
     <a href="{% url 'budget_request_list' %}">All Budget Requests</a>
+    <a href="{% url 'monthly_report' %}">Monthly Reports</a>
+  </div>
+
+  <div class="section">
+    <h2>Monthly Budget Report</h2>
+    {% if monthly_report %}
+      <table>
+        <thead>
+          <tr>
+            <th>City</th>
+            <th>Month</th>
+            <th class="amount">Total Amount ($)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for report in monthly_report %}
+          <tr>
+            <td>{{ report.0 }}</td>
+            <td>{{ report.1 }}</td>
+            <td class="amount">${{ report.2|floatformat:2 }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p>No monthly data available.</p>
+    {% endif %}
   </div>
 
   <div class="section">
@@ -97,7 +126,7 @@
             <td>{{ req.3|truncatewords:10 }}</td>
             <td>{{ req.5 }}</td>
             <td>{{ req.6|date:"Y-m-d" }}</td>
-            <td><a href="{% url 'request_detail' req.0 %}">Review</a></td>
+            <td><a href="{% url 'request_detail' req.0 %}" style="color: #6a1b9a; font-weight: bold;">Review</a></td>
           </tr>
           {% endfor %}
         </tbody>
