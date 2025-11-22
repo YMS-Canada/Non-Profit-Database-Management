@@ -75,7 +75,7 @@ function App() {
               </ProtectedRoute>
             } />
             
-            {/* Legacy routes */}
+            {/* Legacy routes - old files we are keeping for now can remove later */}
             <Route path="/form" element={<BudgetForm />} />
             <Route path="/dashboard" element={<DashBoard />} />
             <Route path="/home" element={<Home />} />

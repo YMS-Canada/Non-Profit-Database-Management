@@ -14,7 +14,7 @@ const MONTHS = [
 // This function creates a new event object with empty string values for all properties
 function emptyEvent() {
   return {
-    name: "",        // Event name (e.g., "Halaqa kickoff")
+    name: "",        // Event name (e.g., "Halaqah kickoff")
     date: "",        // Event date in yyyy-mm-dd format
     total: "",       // Total budget amount as string (converted to number later)
     breakdown: "",   // Detailed breakdown of expenses
