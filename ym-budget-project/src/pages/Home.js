@@ -16,7 +16,6 @@ function Home() {
             </div>
             <div className='steps'>
                 <h2>Steps</h2>
-                <img src={slide} alt="Steps Slide" />
                 <a
                     href="/YM%20Treasurers%20Training%20Presentation.pptx"
                     download
