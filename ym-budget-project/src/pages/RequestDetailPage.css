@@ -1,0 +1,35 @@
+:root{
+  --bg: #f6f7fb;
+  --card: #ffffff;
+  --muted: #6b7280;
+  --accent: #6a1b9a;
+  --danger: #dc2626;
+  --success: #16a34a;
+}
+
+.rd-page{ max-width:900px; margin:28px auto; padding:18px; font-family: Inter,system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial }
+.rd-card{ background:var(--card); padding:18px; border-radius:10px; box-shadow:0 8px 24px rgba(15,23,42,0.06); border:1px solid rgba(15,23,42,0.04) }
+.rd-header{ display:flex; justify-content:space-between; align-items:flex-start; gap:16px; margin-bottom:12px }
+.rd-header h1{ margin:0; font-size:20px }
+.rd-hash{ color:var(--muted); font-weight:600; margin-left:6px }
+.rd-sub{ margin:6px 0 0; color:var(--muted); font-size:13px }
+.rd-header-actions{ display:flex; gap:8px }
+
+.rd-grid{ display:grid; grid-template-columns: 1fr 1fr; gap:18px; align-items:start }
+.rd-info dl{ margin:0 }
+.rd-info dt{ font-weight:700; color:#111827; font-size:13px }
+.rd-info dd{ margin:6px 0 14px 0; color:var(--muted) }
+
+.rd-description h3{ margin:0 0 8px 0 }
+.rd-description p{ margin:0; color:#374151 }
+
+.rd-actions{ margin-top:16px; display:flex; justify-content:flex-end }
+.rd-action-left{ display:flex; gap:10px }
+.rd-btn{ padding:10px 14px; border-radius:8px; font-weight:700; cursor:pointer; border:none }
+.rd-back{ background:transparent; border:1px solid #e5e7eb; color:#111827 }
+.rd-approve{ background:var(--success); color:white }
+.rd-reject{ background:var(--danger); color:white }
+
+.rd-loading, .rd-error, .rd-empty{ max-width:900px; margin:28px auto; padding:18px; color:var(--muted) }
+
+@media (max-width:700px){ .rd-grid{ grid-template-columns: 1fr; } .rd-actions{ justify-content:center } }

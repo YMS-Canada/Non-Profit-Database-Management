@@ -1,0 +1,93 @@
+:root{
+  --bg: #f7f7fb;
+  --card: #ffffff;
+  --accent: #6a1b9a;
+  --accent-600: #5a167f;
+  --muted: #6b7280;
+  --success: #16a34a;
+  --danger: #dc2626;
+  --info: #2563eb;
+}
+
+.create-user-container{
+  max-width: 760px;
+  margin: 28px auto;
+  padding: 20px;
+  background: var(--bg);
+  border-radius: 10px;
+}
+
+.page-header h1{
+  margin: 0 0 6px 0;
+  font-size: 26px;
+  color: #111827;
+}
+
+.page-header .muted{
+  margin: 0;
+  color: var(--muted);
+}
+
+.notice{
+  padding: 12px 14px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  font-size: 14px;
+}
+.notice.warning{ background:#fff7ed; color:#92400e; border:1px solid #fef3c7 }
+.notice.error{ background:#fff1f2; color:var(--danger); border:1px solid #fecaca }
+.notice.success{ background:#ecfdf5; color:var(--success); border:1px solid #bbf7d0 }
+.notice.info{ background:#eff6ff; color:var(--info); border:1px solid #bfdbfe }
+
+.form-card{
+  background: var(--card);
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 6px 18px rgba(15,23,42,0.06);
+  border: 1px solid rgba(15,23,42,0.04);
+}
+
+.form-row{
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.form-label{
+  font-size: 13px;
+  color: #111827;
+  font-weight: 600;
+}
+
+.required{ color: var(--danger); margin-left:4px }
+
+.form-input{
+  padding: 10px 12px;
+  font-size: 14px;
+  border: 1px solid #e6e6ea;
+  border-radius: 8px;
+  background: white;
+  outline: none;
+  transition: box-shadow .15s, border-color .12s;
+}
+.form-input:focus{ box-shadow: 0 0 0 4px rgba(106,27,154,0.06); border-color: var(--accent) }
+
+.form-actions{
+  display:flex;
+  gap:12px;
+  margin-top: 8px;
+}
+
+.btn{ padding:10px 14px; border-radius:8px; font-weight:600; cursor:pointer; border: none }
+.btn.primary{ background: var(--accent); color: white }
+.btn.primary:hover{ background: var(--accent-600) }
+.btn.secondary{ background: transparent; border:1px solid #e5e7eb; color:#111827 }
+
+.back-link{ margin-top: 14px; text-align:center }
+.link{ background:none; border:none; color:var(--accent); cursor:pointer; font-weight:600 }
+
+@media (max-width:640px){
+  .create-user-container{ padding:12px }
+  .form-actions{ flex-direction:column }
+}

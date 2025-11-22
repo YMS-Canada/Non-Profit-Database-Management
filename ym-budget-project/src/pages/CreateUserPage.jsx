@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getCities, createUser } from '../lib/api';
+import './CreateUserPage.css';
 
 export default function CreateUserPage() {
   console.log('CreateUserPage component rendering');
@@ -101,41 +102,23 @@ export default function CreateUserPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto p-4">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-2">Create User Account</h1>
-        <p className="text-gray-600">Create a new user account for ADMIN or TREASURER role</p>
+    <div className="create-user-container">
+      <div className="page-header">
+        <h1>Create User Account</h1>
+        <p className="muted">Create a new user account for ADMIN or TREASURER role</p>
       </div>
 
-      {citiesError && (
-        <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded text-yellow-700">
-          {citiesError}
-        </div>
-      )}
+      {citiesError && <div className="notice warning">{citiesError}</div>}
 
-      {error && (
-        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded text-red-700">
-          {error}
-        </div>
-      )}
+      {error && <div className="notice error">{error}</div>}
 
-      {success && (
-        <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded text-green-700">
-          User account created successfully! Redirecting to admin dashboard...
-        </div>
-      )}
+      {success && <div className="notice success">User account created successfully! Redirecting...</div>}
 
-      {loadingCities && cities.length === 0 && (
-        <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded text-blue-700">
-          Loading cities...
-        </div>
-      )}
+      {loadingCities && cities.length === 0 && <div className="notice info">Loading cities...</div>}
 
-      <form onSubmit={handleSubmit} className="space-y-6 bg-white p-6 rounded-lg border">
-        <div>
-          <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-            Name <span className="text-red-500">*</span>
-          </label>
+      <form onSubmit={handleSubmit} className="form-card">
+        <div className="form-row">
+          <label htmlFor="name" className="form-label">Name <span className="required">*</span></label>
           <input
             type="text"
             id="name"
@@ -143,15 +126,13 @@ export default function CreateUserPage() {
             value={formData.name}
             onChange={handleChange}
             required
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="form-input"
             placeholder="Full name"
           />
         </div>
 
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-            Email <span className="text-red-500">*</span>
-          </label>
+        <div className="form-row">
+          <label htmlFor="email" className="form-label">Email <span className="required">*</span></label>
           <input
             type="email"
             id="email"
@@ -159,106 +140,55 @@ export default function CreateUserPage() {
             value={formData.email}
             onChange={handleChange}
             required
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="form-input"
             placeholder="user@example.com"
           />
         </div>
 
-        <div>
-          <label htmlFor="whatsapp" className="block text-sm font-medium text-gray-700 mb-1">
-            WhatsApp (Optional)
-          </label>
+        <div className="form-row">
+          <label htmlFor="whatsapp" className="form-label">WhatsApp (Optional)</label>
           <input
             type="text"
             id="whatsapp"
             name="whatsapp"
             value={formData.whatsapp}
             onChange={handleChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="form-input"
             placeholder="+1 234 567 8900"
           />
         </div>
 
-        <div>
-          <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">
-            Role <span className="text-red-500">*</span>
-          </label>
-          <select
-            id="role"
-            name="role"
-            value={formData.role}
-            onChange={handleChange}
-            required
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          >
+        <div className="form-row"> 
+          <label htmlFor="role" className="form-label">Role <span className="required">*</span></label>
+          <select id="role" name="role" value={formData.role} onChange={handleChange} required className="form-input">
             <option value="TREASURER">TREASURER</option>
             <option value="ADMIN">ADMIN</option>
           </select>
         </div>
 
-        <div>
-          <label htmlFor="city_id" className="block text-sm font-medium text-gray-700 mb-1">
-            City <span className="text-red-500">*</span>
-          </label>
-          <select
-            id="city_id"
-            name="city_id"
-            value={formData.city_id}
-            onChange={handleChange}
-            required
-            disabled={loadingCities}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-          >
+        <div className="form-row">
+          <label htmlFor="city_id" className="form-label">City <span className="required">*</span></label>
+          <select id="city_id" name="city_id" value={formData.city_id} onChange={handleChange} required disabled={loadingCities} className="form-input">
             <option value="">{loadingCities ? 'Loading cities...' : '-- Select City --'}</option>
             {cities.map((city) => (
-              <option key={city.city_id} value={city.city_id}>
-                {city.name} ({city.province})
-              </option>
+              <option key={city.city_id} value={city.city_id}>{city.name} ({city.province})</option>
             ))}
           </select>
         </div>
 
-        <div>
-          <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-            Password <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="password"
-            id="password"
-            name="password"
-            value={formData.password}
-            onChange={handleChange}
-            required
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            placeholder="Enter secure password"
-          />
+        <div className="form-row">
+          <label htmlFor="password" className="form-label">Password <span className="required">*</span></label>
+          <input type="password" id="password" name="password" value={formData.password} onChange={handleChange} required className="form-input" placeholder="Enter secure password" />
         </div>
 
-        <div className="flex gap-3 pt-4">
-          <button
-            type="submit"
-            disabled={loading}
-            className="flex-1 bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-          >
-            {loading ? 'Creating...' : 'Create Account'}
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/admin-dashboard')}
-            className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 font-medium"
-          >
-            Cancel
-          </button>
+        <div className="form-actions">
+          <button type="submit" disabled={loading} className="btn primary">{loading ? 'Creating...' : 'Create Account'}</button>
+          <button type="button" onClick={() => navigate('/admin-dashboard')} className="btn secondary">Cancel</button>
         </div>
       </form>
 
-      <div className="mt-4 text-center">
-        <button
-          onClick={() => navigate('/admin-dashboard')}
-          className="text-indigo-600 hover:text-indigo-800 text-sm"
-        >
-          ← Back to Admin Dashboard
-        </button>
+      <div className="back-link">
+        <button onClick={() => navigate('/admin-dashboard')} className="link">← Back to Admin Dashboard</button>
       </div>
     </div>
   );

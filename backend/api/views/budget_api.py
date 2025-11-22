@@ -194,31 +194,37 @@ def _update_request_status(request_id, new_status, decision, approver_id):
     Updates budget_request status and inserts approval record.
     Returns JsonResponse with request_id and new status.
     """
-    with connection.cursor() as cur:
-        # Check if request exists
-        cur.execute(
-            "SELECT request_id FROM budget_request WHERE request_id = %s",
-            [request_id],
-        )
-        row = cur.fetchone()
-        if not row:
-            return JsonResponse({'detail': 'Request not found'}, status=404)
+    try:
+        with connection.cursor() as cur:
+            # Check if request exists
+            cur.execute(
+                "SELECT request_id FROM budget_request WHERE request_id = %s",
+                [request_id],
+            )
+            row = cur.fetchone()
+            if not row:
+                return JsonResponse({'detail': 'Request not found'}, status=404)
 
-        # Update status
-        cur.execute(
-            "UPDATE budget_request SET status = %s WHERE request_id = %s",
-            [new_status, request_id],
-        )
-        
-        # Insert approval record
-        cur.execute(
-            """
-            INSERT INTO approval (request_id, approver_id, decision, note, decided_at)
-            VALUES (%s, %s, %s, NULL, NOW())
-        """,
-            [request_id, approver_id, decision],
-        )
-    return JsonResponse({'request_id': request_id, 'status': new_status})
+            # Update status
+            cur.execute(
+                "UPDATE budget_request SET status = %s WHERE request_id = %s",
+                [new_status, request_id],
+            )
+            
+            # Insert approval record
+            cur.execute(
+                """
+                INSERT INTO approval (request_id, approver_id, decision, note, decided_at)
+                VALUES (%s, %s, %s, NULL, NOW())
+            """,
+                [request_id, approver_id, decision],
+            )
+        return JsonResponse({'request_id': request_id, 'status': new_status})
+    except Exception as exc:
+        # Log full traceback to the server console for debugging
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({'detail': f'Internal error: {str(exc)}'}, status=500)
 
 
 @csrf_exempt

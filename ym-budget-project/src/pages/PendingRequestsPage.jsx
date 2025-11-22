@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getPendingRequests, approveBudgetRequest, rejectBudgetRequest } from '../lib/api';
+import './PendingRequestsPage.css';
 
 export default function PendingRequestsPage() {
   const [loading, setLoading] = useState(true);
@@ -53,137 +54,85 @@ export default function PendingRequestsPage() {
   const pendingRequests = requests.filter(r => r.status === 'PENDING');
   const rejectedRequests = requests.filter(r => r.status === 'REJECTED');
 
-  if (loading) return <div className="p-4">Loading pending requests...</div>;
-  if (error) return <div className="p-4 text-red-600">Error: {error}</div>;
+  const formatDate = (d) => (d ? new Date(d).toLocaleDateString() : '—');
+
+  if (loading) return <div className="pr-page p-4">Loading pending requests...</div>;
+  if (error) return <div className="pr-page p-4 pr-error">Error: {error}</div>;
 
   return (
-    <div className="max-w-7xl mx-auto p-4">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold">Pending Requests</h1>
-        <Link
-          to="/admin-dashboard"
-          className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700"
-        >
-          Back to Admin Dashboard
-        </Link>
+    <div className="pr-page">
+      <div className="pr-header">
+        <div>
+          <h1>Pending Requests</h1>
+          <p className="muted">Review and approve or reject budget requests from cities.</p>
+        </div>
+        <div className="pr-actions">
+          <Link to="/admin-dashboard" className="btn secondary">Back to Dashboard</Link>
+        </div>
       </div>
 
-      <p className="mb-4 text-gray-600">
-        View all budget requests from cities that are pending approval or have been rejected and need to be resubmitted.
-      </p>
-
-      {/* Pending Requests Section */}
-      <div className="mb-8">
-        <h2 className="text-2xl font-semibold mb-4 text-yellow-700">
-          Pending Approval ({pendingRequests.length})
-        </h2>
+      <section className="pr-section">
+        <h2>Pending Approval <span className="count">{pendingRequests.length}</span></h2>
         {pendingRequests.length === 0 ? (
-          <p className="text-gray-500 italic">No pending requests at this time.</p>
+          <div className="empty">No pending requests at this time.</div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 border">
-              <thead className="bg-yellow-50">
-                <tr>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">ID</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">City</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Month</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Description</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Requester</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Submitted</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {pendingRequests.map((req) => (
-                  <tr key={req.request_id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-sm font-medium">{req.request_id}</td>
-                    <td className="px-4 py-3 text-sm">{req.city_name}</td>
-                    <td className="px-4 py-3 text-sm">{req.month || '—'}</td>
-                    <td className="px-4 py-3 text-sm">{req.description || '—'}</td>
-                    <td className="px-4 py-3 text-sm">
-                      <div>{req.requester_name || '—'}</div>
-                      {req.requester_email && (
-                        <div className="text-xs text-gray-500">{req.requester_email}</div>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-sm">
-                      {req.created_at ? new Date(req.created_at).toLocaleDateString() : '—'}
-                    </td>
-                    <td className="px-4 py-3 text-sm">
-                      <div className="flex gap-2">
-                        <button
-                          className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700 disabled:opacity-50"
-                          onClick={() => handleApprove(req.request_id)}
-                          disabled={processingId === req.request_id}
-                        >
-                          {processingId === req.request_id ? 'Processing…' : 'Approve'}
-                        </button>
-                        <button
-                          className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 disabled:opacity-50"
-                          onClick={() => handleReject(req.request_id)}
-                          disabled={processingId === req.request_id}
-                        >
-                          {processingId === req.request_id ? 'Processing…' : 'Reject'}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="card-grid">
+            {pendingRequests.map((req) => (
+              <article key={req.request_id} className="req-card">
+                <div className="req-top">
+                  <div className="req-id">#{req.request_id}</div>
+                  <div className="req-city">{req.city_name}</div>
+                </div>
+                <div className="req-body">
+                  <div className="req-item"><strong>Month:</strong> {req.month || '—'}</div>
+                  <div className="req-item"><strong>Amount:</strong> {req.amount ? `$${req.amount}` : '—'}</div>
+                  <div className="req-desc">{req.description || 'No description provided.'}</div>
+                </div>
+                <div className="req-meta">
+                  <div className="requester">{req.requester_name || '—'}</div>
+                  <div className="small muted">{req.requester_email || ''}</div>
+                  <div className="small muted">Submitted: {formatDate(req.created_at)}</div>
+                </div>
+                <div className="req-actions">
+                  <button className="btn approve" onClick={() => handleApprove(req.request_id)} disabled={processingId===req.request_id}>{processingId===req.request_id ? '…' : 'Approve'}</button>
+                  <button className="btn reject" onClick={() => handleReject(req.request_id)} disabled={processingId===req.request_id}>{processingId===req.request_id ? '…' : 'Reject'}</button>
+                  <Link to={`/admin/requests/${req.request_id}`} className="link view">View</Link>
+                </div>
+              </article>
+            ))}
           </div>
         )}
-      </div>
+      </section>
 
-      {/* Rejected Requests Section */}
-      <div>
-        <h2 className="text-2xl font-semibold mb-4 text-red-700">
-          Rejected / Needs Resubmission ({rejectedRequests.length})
-        </h2>
+      <section className="pr-section">
+        <h2>Rejected / Needs Resubmission <span className="count">{rejectedRequests.length}</span></h2>
         {rejectedRequests.length === 0 ? (
-          <p className="text-gray-500 italic">No rejected requests at this time.</p>
+          <div className="empty">No rejected requests at this time.</div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 border">
-              <thead className="bg-red-50">
-                <tr>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">ID</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">City</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Month</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Description</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Requester</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Rejected On</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Status</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {rejectedRequests.map((req) => (
-                  <tr key={req.request_id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-sm font-medium">{req.request_id}</td>
-                    <td className="px-4 py-3 text-sm">{req.city_name}</td>
-                    <td className="px-4 py-3 text-sm">{req.month || '—'}</td>
-                    <td className="px-4 py-3 text-sm">{req.description || '—'}</td>
-                    <td className="px-4 py-3 text-sm">
-                      <div>{req.requester_name || '—'}</div>
-                      {req.requester_email && (
-                        <div className="text-xs text-gray-500">{req.requester_email}</div>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-sm">
-                      {req.updated_at ? new Date(req.updated_at).toLocaleDateString() : '—'}
-                    </td>
-                    <td className="px-4 py-3 text-sm">
-                      <span className="px-2 py-1 rounded text-xs font-semibold bg-red-100 text-red-800">
-                        REJECTED
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="card-grid">
+            {rejectedRequests.map((req) => (
+              <article key={req.request_id} className="req-card muted-card">
+                <div className="req-top">
+                  <div className="req-id">#{req.request_id}</div>
+                  <div className="req-city">{req.city_name}</div>
+                </div>
+                <div className="req-body">
+                  <div className="req-item"><strong>Month:</strong> {req.month || '—'}</div>
+                  <div className="req-desc">{req.description || 'No description provided.'}</div>
+                </div>
+                <div className="req-meta">
+                  <div className="requester">{req.requester_name || '—'}</div>
+                  <div className="small muted">Rejected: {formatDate(req.updated_at)}</div>
+                </div>
+                <div className="req-actions">
+                  <span className="status rejected">REJECTED</span>
+                  <Link to={`/admin/requests/${req.request_id}`} className="link view">View</Link>
+                </div>
+              </article>
+            ))}
           </div>
         )}
-      </div>
+      </section>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getPendingRequests, approveBudgetRequest, rejectBudgetRequest } from '../lib/api';
+import './RequestDetailPage.css';
 
 export default function RequestDetailPage() {
   const { id } = useParams();
@@ -58,31 +59,49 @@ export default function RequestDetailPage() {
     }
   }
 
-  if (loading) return <div className="p-4">Loading request…</div>;
-  if (error) return <div className="p-4 text-red-600">Error: {error}</div>;
-  if (!request) return <div className="p-4">No request found</div>;
+  if (loading) return <div className="rd-page rd-loading">Loading request…</div>;
+  if (error) return <div className="rd-page rd-error">Error: {error}</div>;
+  if (!request) return <div className="rd-page rd-empty">No request found</div>;
 
   return (
-    <div className="max-w-4xl mx-auto p-4">
-      <h1 className="text-2xl font-semibold mb-4">Review Request #{request.request_id}</h1>
-      <div className="mb-4">
-        <div><strong>City:</strong> {request.city_name}</div>
-        <div><strong>Month:</strong> {request.month}</div>
-        <div><strong>Description:</strong> {request.description}</div>
-        <div><strong>Requester:</strong> {request.requester_name} {request.requester_email ? `(${request.requester_email})` : ''}</div>
-        <div><strong>Submitted:</strong> {request.created_at ? new Date(request.created_at).toLocaleString() : '—'}</div>
-      </div>
+    <div className="rd-page">
+      <div className="rd-card">
+        <header className="rd-header">
+          <div>
+            <h1>Review Request <span className="rd-hash">#{request.request_id}</span></h1>
+            <p className="rd-sub">Submitted: {request.created_at ? new Date(request.created_at).toLocaleString() : '—'}</p>
+          </div>
+          <div className="rd-header-actions">
+            <button onClick={() => navigate('/admin/pending-requests')} className="rd-btn rd-back">Back</button>
+          </div>
+        </header>
 
-      <div className="flex gap-3">
-        <button onClick={handleApprove} disabled={processing} className="bg-green-600 text-white px-4 py-2 rounded">
-          {processing ? 'Processing…' : 'Approve'}
-        </button>
-        <button onClick={handleReject} disabled={processing} className="bg-red-600 text-white px-4 py-2 rounded">
-          {processing ? 'Processing…' : 'Reject'}
-        </button>
-        <button onClick={() => navigate('/admin/pending-requests')} className="px-4 py-2 border rounded">
-          Back
-        </button>
+        <section className="rd-grid">
+          <div className="rd-info">
+            <dl>
+              <dt>City</dt>
+              <dd>{request.city_name || '—'}</dd>
+
+              <dt>Month</dt>
+              <dd>{request.month || '—'}</dd>
+
+              <dt>Requester</dt>
+              <dd>{request.requester_name || '—'} {request.requester_email ? <span className="rd-email">({request.requester_email})</span> : null}</dd>
+            </dl>
+          </div>
+
+          <div className="rd-description">
+            <h3>Description</h3>
+            <p>{request.description || 'No description provided.'}</p>
+          </div>
+        </section>
+
+        <footer className="rd-actions">
+          <div className="rd-action-left">
+            <button onClick={handleApprove} disabled={processing} className="rd-btn rd-approve">{processing ? 'Processing…' : 'Approve'}</button>
+            <button onClick={handleReject} disabled={processing} className="rd-btn rd-reject">{processing ? 'Processing…' : 'Reject'}</button>
+          </div>
+        </footer>
       </div>
     </div>
   );

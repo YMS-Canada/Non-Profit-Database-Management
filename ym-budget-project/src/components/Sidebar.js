@@ -22,7 +22,7 @@ export const Sidebar = [
         cName: 'nav-text'
     },
     {
-        title: 'Admin',
+        title: 'Dashboard',
         // Use the SPA admin dashboard route to avoid colliding with Django's /admin/ URL
         path: '/admin-dashboard',
         // Material Design Admin Panel icon
@@ -42,12 +42,6 @@ export const Sidebar = [
         icon: <FaIcons.FaListAlt />,     // pick whatever icon you like
         cName: 'nav-text'
     },
-    {
-        title: 'Dashboard',
-        path: '/dashboard',
-        // Material Design Dashboard icon
-        icon: <MdIcons.MdDashboard />,
-        cName: 'nav-text'
-    }
+    // Dashboard removed per user request
     // You can add more menu items here by adding more objects to this array
 ]

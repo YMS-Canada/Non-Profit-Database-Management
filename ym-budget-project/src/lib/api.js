@@ -147,7 +147,7 @@ export async function createBudgetRequest(data) {
 
 export async function approveBudgetRequest(id) {
   if (id === undefined || id === null) throw new Error('id is required');
-  const res = await fetch(`${API_BASE}/api/budget-requests/${encodeURIComponent(id)}/approve`, {
+  const res = await fetch(`${API_BASE}/api/budget-requests/${encodeURIComponent(id)}/approve/`, {
     method: 'POST',
     credentials: 'include',
     headers: { 'Accept': 'application/json' },
@@ -157,7 +157,7 @@ export async function approveBudgetRequest(id) {
 
 export async function rejectBudgetRequest(id) {
   if (id === undefined || id === null) throw new Error('id is required');
-  const res = await fetch(`${API_BASE}/api/budget-requests/${encodeURIComponent(id)}/reject`, {
+  const res = await fetch(`${API_BASE}/api/budget-requests/${encodeURIComponent(id)}/reject/`, {
     method: 'POST',
     credentials: 'include',
     headers: { 'Accept': 'application/json' },
