@@ -164,3 +164,53 @@ export async function rejectBudgetRequest(id) {
   });
   return handleResponse(res);
 }
+
+// ---------- Dashboard API ----------
+
+export async function getAdminDashboard() {
+  const res = await fetch(`${API_BASE}/api/admin/dashboard/`, {
+    method: 'GET',
+    credentials: 'include',
+    headers: { 'Accept': 'application/json' },
+  });
+  return handleResponse(res);
+}
+
+export async function getTreasurerDashboard() {
+  const res = await fetch(`${API_BASE}/api/treasurer/dashboard/`, {
+    method: 'GET',
+    credentials: 'include',
+    headers: { 'Accept': 'application/json' },
+  });
+  return handleResponse(res);
+}
+
+export async function getPendingRequests() {
+  const res = await fetch(`${API_BASE}/api/admin/pending-requests/`, {
+    method: 'GET',
+    credentials: 'include',
+    headers: { 'Accept': 'application/json' },
+  });
+  return handleResponse(res);
+}
+
+// ---------- User Management API ----------
+
+export async function getCities() {
+  const res = await fetch(`${API_BASE}/api/cities/`, {
+    method: 'GET',
+    credentials: 'include',
+    headers: { 'Accept': 'application/json' },
+  });
+  return handleResponse(res);
+}
+
+export async function createUser(userData) {
+  const res = await fetch(`${API_BASE}/api/admin/users/`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+    body: JSON.stringify(userData),
+  });
+  return handleResponse(res);
+}

@@ -27,9 +27,14 @@ urlpatterns = [
     # ----- JSON API for React -----
     path('api/login/', auth_views.api_login, name='api_login'),
     path('api/current-user/', auth_views.api_current_user, name='api_current_user'),
-    path('budget-requests/json/', budget_api.api_budget_requests, name='api_budget_requests'),
-    path('budget-requests/<int:request_id>/approve/', budget_api.api_budget_approve, name='api_budget_approve'),
-    path('budget-requests/<int:request_id>/reject/', budget_api.api_budget_reject, name='api_budget_reject'),
+    path('api/cities/', auth_views.api_cities, name='api_cities'),
+    path('api/admin/users/', auth_views.api_create_user, name='api_create_user'),
+    path('api/admin/dashboard/', budget_api.api_admin_dashboard, name='api_admin_dashboard'),
+    path('api/admin/pending-requests/', budget_api.api_pending_requests, name='api_pending_requests'),
+    path('api/treasurer/dashboard/', budget_api.api_treasurer_dashboard, name='api_treasurer_dashboard'),
+    path('api/budget-requests/', budget_api.api_budget_requests, name='api_budget_list'),
+    path('api/budget-requests/<int:request_id>/approve/', budget_api.api_budget_approve, name='api_budget_approve'),
+    path('api/budget-requests/<int:request_id>/reject/', budget_api.api_budget_reject, name='api_budget_reject'),
     path('api/budget-requests/<int:request_id>/delete/', delete_views.api_delete_budget_request, name='api_delete_budget_request'),
     path('api/users/<int:user_id>/delete/', delete_views.api_delete_user, name='api_delete_user'),
 ]

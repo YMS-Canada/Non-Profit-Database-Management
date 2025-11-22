@@ -81,13 +81,13 @@ function AdminDashboard() {
       <div className="action-section">
         <h2>Quick Actions</h2>
         <div className="action-buttons">
-          <button className="action-btn" onClick={() => navigate('/admin/requests')}>
+          <button className="action-btn" onClick={() => navigate('/admin/pending-requests')}>
             View Pending Requests
           </button>
-          <button className="action-btn" onClick={() => navigate('/admin/reports')}>
+          <button className="action-btn" onClick={() => navigate('/admin-dashboard')}>
             Monthly Reports
           </button>
-          <button className="action-btn" onClick={() => navigate('/admin/create-account')}>
+          <button className="action-btn" onClick={() => navigate('/admin/create-user')}>
             Create User Account
           </button>
           <button className="action-btn" onClick={() => navigate('/budgets')}>

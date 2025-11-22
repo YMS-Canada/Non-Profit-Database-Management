@@ -332,3 +332,82 @@ def api_current_user(request):
             'city_name': row[5],
         }
     })
+
+
+@csrf_exempt
+def api_cities(request):
+    """JSON API endpoint to get list of cities"""
+    if not require_login(request):
+        return JsonResponse({'detail': 'Unauthorized'}, status=401)
+    
+    with connection.cursor() as cur:
+        cur.execute("SELECT city_id, name, province FROM city ORDER BY name;")
+        cities = [
+            {
+                'city_id': r[0],
+                'name': r[1],
+                'province': r[2],
+            }
+            for r in cur.fetchall()
+        ]
+    
+    return JsonResponse({'cities': cities}, safe=False)
+
+
+@csrf_exempt
+def api_create_user(request):
+    """JSON API endpoint for creating user accounts (Admin only)"""
+    if not require_role(request, 'ADMIN'):
+        return JsonResponse({'detail': 'Forbidden'}, status=403)
+    
+    if request.method != 'POST':
+        return JsonResponse({'detail': 'Method not allowed'}, status=405)
+    
+    try:
+        data = json.loads(request.body)
+        name = data.get('name', '').strip()
+        email = data.get('email', '').strip()
+        whatsapp = data.get('whatsapp', '').strip()
+        role = data.get('role', '').strip()
+        city_id = data.get('city_id')
+        password = data.get('password', '').strip()
+    except json.JSONDecodeError:
+        return JsonResponse({'detail': 'Invalid JSON'}, status=400)
+    
+    # Validation
+    if role not in ('ADMIN', 'TREASURER'):
+        return JsonResponse({'detail': 'Role must be ADMIN or TREASURER'}, status=400)
+    
+    if not (name and email and password and city_id):
+        return JsonResponse({'detail': 'Name, email, password, and city are required'}, status=400)
+    
+    try:
+        city_id_int = int(city_id)
+    except (ValueError, TypeError):
+        return JsonResponse({'detail': 'Invalid city_id'}, status=400)
+    
+    with connection.cursor() as cur:
+        try:
+            cur.execute("""
+                INSERT INTO users (name, email, whatsapp, role, password_hash, city_id, invited_at, is_active)
+                VALUES (%s, %s, %s, %s, %s, %s, NOW(), TRUE)
+                RETURNING user_id, name, email, role, city_id
+            """, [name, email, whatsapp, role, password, city_id_int])
+            row = cur.fetchone()
+            
+            return JsonResponse({
+                'user': {
+                    'user_id': row[0],
+                    'name': row[1],
+                    'email': row[2],
+                    'role': row[3],
+                    'city_id': row[4],
+                },
+                'message': 'User account created successfully'
+            }, status=201)
+        except Exception as e:
+            # Check if it's a unique constraint violation
+            error_msg = str(e)
+            if 'unique' in error_msg.lower() or 'duplicate' in error_msg.lower():
+                return JsonResponse({'detail': 'Email already exists'}, status=400)
+            return JsonResponse({'detail': f'Error creating user: {error_msg}'}, status=500)

@@ -7,11 +7,14 @@ import DashBoard from './pages/DashBoard';
 import AdminPanel from './pages/AdminPanel';
 import Navbar from './components/Navbar';
 import BudgetListPage from "./pages/BudgetListPage";
+import PendingRequestsPage from "./pages/PendingRequestsPage";
 import NewBudgetPage from "./pages/NewBudgetPage";
+import CreateUserPage from "./pages/CreateUserPage";
 import Login from './pages/Login';
 import AdminDashboard from './pages/AdminDashboard';
 import TreasurerDashboard from './pages/TreasurerDashboard';
 import { ProtectedRoute, PublicRoute } from './components/ProtectedRoute';
+import RequestDetailPage from './pages/RequestDetailPage';
 
 function App() {
   return (
@@ -35,6 +38,21 @@ function App() {
             <Route path="/admin" element={
               <ProtectedRoute requiredRole="ADMIN">
                 <AdminPanel />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/pending-requests" element={
+              <ProtectedRoute requiredRole="ADMIN">
+                <PendingRequestsPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/create-user" element={
+              <ProtectedRoute requiredRole="ADMIN">
+                <CreateUserPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/requests/:id" element={
+              <ProtectedRoute requiredRole="ADMIN">
+                <RequestDetailPage />
               </ProtectedRoute>
             } />
             
