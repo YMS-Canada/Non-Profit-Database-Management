@@ -112,15 +112,11 @@ def api_delete_user(request, user_id):
 @require_http_methods(["DELETE"])
 @transaction.atomic
 def api_delete_budget_request(request, request_id):
-    """DELETE: Delete budget request via API (owner only, PENDING or REJECTED only)"""
+    """DELETE: Delete budget request via API (owner or admin, PENDING or REJECTED only)"""
     user_id, role, _ = get_current_user(request)
     
     if not user_id:
         return JsonResponse({'detail': 'Unauthorized'}, status=401)
-    
-    # Only treasurers can delete their own requests
-    if role != 'TREASURER':
-        return JsonResponse({'detail': 'Only treasurers can delete budget requests'}, status=403)
     
     with connection.cursor() as cur:
         # Check ownership and status
@@ -136,9 +132,16 @@ def api_delete_budget_request(request, request_id):
         
         requester_id, status = row
         
-        # Check ownership
-        if requester_id != user_id:
-            return JsonResponse({'detail': 'You can only delete your own budget requests'}, status=403)
+        # Check authorization: Admin can delete any request, Treasurer can only delete their own
+        if role == 'ADMIN':
+            # Admin can delete any request
+            pass
+        elif role == 'TREASURER':
+            # Treasurer can only delete their own requests
+            if requester_id != user_id:
+                return JsonResponse({'detail': 'You can only delete your own budget requests'}, status=403)
+        else:
+            return JsonResponse({'detail': 'Unauthorized'}, status=403)
         
         # Check status - only PENDING or REJECTED can be deleted
         if status not in ('PENDING', 'REJECTED'):

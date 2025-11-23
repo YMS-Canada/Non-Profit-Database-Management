@@ -138,6 +138,9 @@ export default function BudgetListPage() {
                 {role === 'ADMIN' ? (
                   <div className="action-group">
                     <Link to={`/admin/requests/${r.request_id}`} state={{ from: '/budgets' }} className="view-link">View Details</Link>
+                    {(r.status === 'PENDING' || r.status === 'REJECTED') && (
+                      <button className="btn danger" onClick={() => handleDelete(r.request_id)} disabled={processingId===r.request_id}>{processingId===r.request_id ? '…' : 'Delete'}</button>
+                    )}
                   </div>
                 ) : role === 'TREASURER' && r.requester_id === userId ? (
                   r.status === 'REJECTED' ? (

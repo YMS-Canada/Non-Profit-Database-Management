@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { getBudgetRequestDetail, approveBudgetRequest, rejectBudgetRequest } from '../lib/api';
+import { getBudgetRequestDetail, approveBudgetRequest, rejectBudgetRequest, deleteBudgetRequest, getCurrentUser } from '../lib/api';
 import './RequestDetailPage.css';
 
 export default function RequestDetailPage() {
@@ -16,6 +16,7 @@ export default function RequestDetailPage() {
   const [commentAction, setCommentAction] = useState(null); // 'approve' or 'reject'
   const [comment, setComment] = useState('');
   const [commentError, setCommentError] = useState('');
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
     let mounted = true;
@@ -23,8 +24,10 @@ export default function RequestDetailPage() {
       setLoading(true);
       setError(null);
       try {
+        const currentUser = await getCurrentUser();
         const data = await getBudgetRequestDetail(id);
         if (mounted) {
+          setUser(currentUser);
           setRequest(data);
         }
       } catch (err) {
@@ -65,6 +68,19 @@ export default function RequestDetailPage() {
     } finally {
       setProcessing(false);
       closeCommentModal();
+    }
+  }
+
+  async function handleDelete() {
+    if (!window.confirm('Are you sure you want to delete this request?')) return;
+    setProcessing(true);
+    try {
+      await deleteBudgetRequest(id);
+      navigate(fromPage);
+    } catch (err) {
+      setError(err.message || String(err));
+    } finally {
+      setProcessing(false);
     }
   }
 
@@ -162,11 +178,19 @@ export default function RequestDetailPage() {
           </section>
         )}
 
-        {request.status === 'PENDING' && (
+        {request.status === 'PENDING' && user?.role === 'ADMIN' && (
           <footer className="rd-actions">
             <div className="rd-action-left">
               <button onClick={() => openCommentModal('approve')} disabled={processing} className="rd-btn rd-approve">{processing ? 'Processing…' : 'Approve'}</button>
               <button onClick={() => openCommentModal('reject')} disabled={processing} className="rd-btn rd-reject">{processing ? 'Processing…' : 'Reject'}</button>
+              <button onClick={handleDelete} disabled={processing} className="rd-btn rd-delete">{processing ? 'Processing…' : 'Delete'}</button>
+            </div>
+          </footer>
+        )}
+        {request.status === 'REJECTED' && user?.role === 'ADMIN' && (
+          <footer className="rd-actions">
+            <div className="rd-action-left">
+              <button onClick={handleDelete} disabled={processing} className="rd-btn rd-delete">{processing ? 'Processing…' : 'Delete'}</button>
             </div>
           </footer>
         )}
