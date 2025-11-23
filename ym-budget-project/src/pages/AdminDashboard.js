@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getCurrentUser } from '../lib/api';
+import { getCurrentUser, getAdminDashboard } from '../lib/api';
 import './Dashboard.css';
 
 function AdminDashboard() {
@@ -23,9 +23,18 @@ function AdminDashboard() {
         }
         setUser(currentUser);
         
-        // You can fetch stats here from your backend
-        // For now, using placeholder data
+        // Fetch admin dashboard stats
+        const dashboardData = await getAdminDashboard();
+        if (dashboardData.stats) {
+          setStats({
+            totalUsers: dashboardData.stats.total_users || 0,
+            totalRequests: dashboardData.stats.total || 0,
+            pendingRequests: dashboardData.stats.pending || 0,
+            approvedAmount: dashboardData.stats.approved_amount || 0
+          });
+        }
       } catch (err) {
+        console.error('Dashboard error:', err);
         navigate('/login');
       }
     };
@@ -84,7 +93,7 @@ function AdminDashboard() {
           <button className="action-btn" onClick={() => navigate('/admin/pending-requests')}>
             View Pending Requests
           </button>
-          <button className="action-btn" onClick={() => navigate('/admin-dashboard')}>
+          <button className="action-btn" onClick={() => navigate('/admin/reports/monthly')}>
             Monthly Reports
           </button>
           <button className="action-btn" onClick={() => navigate('/admin/create-user')}>

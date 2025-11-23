@@ -145,22 +145,61 @@ export async function createBudgetRequest(data) {
   return handleResponse(res);
 }
 
-export async function approveBudgetRequest(id) {
+export async function approveBudgetRequest(id, comment = '') {
   if (id === undefined || id === null) throw new Error('id is required');
   const res = await fetch(`${API_BASE}/api/budget-requests/${encodeURIComponent(id)}/approve/`, {
     method: 'POST',
+    credentials: 'include',
+    headers: { 
+      'Content-Type': 'application/json',
+      'Accept': 'application/json' 
+    },
+    body: JSON.stringify({ comment }),
+  });
+  return handleResponse(res);
+}
+
+export async function rejectBudgetRequest(id, comment = '') {
+  if (id === undefined || id === null) throw new Error('id is required');
+  const res = await fetch(`${API_BASE}/api/budget-requests/${encodeURIComponent(id)}/reject/`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 
+      'Content-Type': 'application/json',
+      'Accept': 'application/json' 
+    },
+    body: JSON.stringify({ comment }),
+  });
+  return handleResponse(res);
+}
+
+export async function deleteBudgetRequest(id) {
+  if (id === undefined || id === null) throw new Error('id is required');
+  const res = await fetch(`${API_BASE}/api/budget-requests/${encodeURIComponent(id)}/delete/`, {
+    method: 'DELETE',
     credentials: 'include',
     headers: { 'Accept': 'application/json' },
   });
   return handleResponse(res);
 }
 
-export async function rejectBudgetRequest(id) {
+export async function getBudgetRequestDetail(id) {
   if (id === undefined || id === null) throw new Error('id is required');
-  const res = await fetch(`${API_BASE}/api/budget-requests/${encodeURIComponent(id)}/reject/`, {
-    method: 'POST',
+  const res = await fetch(`${API_BASE}/api/budget-requests/${encodeURIComponent(id)}/`, {
+    method: 'GET',
     credentials: 'include',
     headers: { 'Accept': 'application/json' },
+  });
+  return handleResponse(res);
+}
+
+export async function updateBudgetRequest(id, data) {
+  if (id === undefined || id === null) throw new Error('id is required');
+  const res = await fetch(`${API_BASE}/api/budget-requests/${encodeURIComponent(id)}/`, {
+    method: 'PUT',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+    body: JSON.stringify(data),
   });
   return handleResponse(res);
 }
@@ -187,6 +226,15 @@ export async function getTreasurerDashboard() {
 
 export async function getPendingRequests() {
   const res = await fetch(`${API_BASE}/api/admin/pending-requests/`, {
+    method: 'GET',
+    credentials: 'include',
+    headers: { 'Accept': 'application/json' },
+  });
+  return handleResponse(res);
+}
+
+export async function getMonthlyReport() {
+  const res = await fetch(`${API_BASE}/api/admin/reports/monthly/`, {
     method: 'GET',
     credentials: 'include',
     headers: { 'Accept': 'application/json' },

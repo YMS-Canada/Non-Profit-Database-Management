@@ -1,34 +1,93 @@
-import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import { createBudgetRequest } from "../lib/api";
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { getBudgetRequestDetail, updateBudgetRequest, getCurrentUser } from "../lib/api";
 import "./BudgetListPage.css";
 
-const emptyLine = () => ({ description: "", amount: "" });
-
-export default function NewBudgetPage() {
+export default function BudgetEditPage() {
+  const { requestId } = useParams();
   const navigate = useNavigate();
-  const [month, setMonth] = useState("");
-  const [description, setDescription] = useState("");
-  const [eventName, setEventName] = useState("");
-  const [eventDate, setEventDate] = useState("");
-  const [eventNotes, setEventNotes] = useState("");
-  const [lines, setLines] = useState([emptyLine()]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [user, setUser] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  
+  // Function to go back to budget list
+  const goBack = () => {
+    navigate('/budgets');
+  };
+  
+  const [month, setMonth] = useState('');
+  const [description, setDescription] = useState('');
+  const [eventName, setEventName] = useState('');
+  const [eventDate, setEventDate] = useState('');
+  const [eventNotes, setEventNotes] = useState('');
+  const [adminComment, setAdminComment] = useState('');
+  const [breakdownLines, setBreakdownLines] = useState([
+    { category_id: '', description: '', amount: '' }
+  ]);
 
-  function updateLine(index, field, value) {
-    setLines((prev) =>
-      prev.map((line, idx) => (idx === index ? { ...line, [field]: value } : line))
-    );
-  }
+  useEffect(() => {
+    async function loadData() {
+      setLoading(true);
+      try {
+        const currentUser = await getCurrentUser();
+        if (currentUser.role !== 'TREASURER') {
+          navigate('/login');
+          return;
+        }
+        setUser(currentUser);
+
+        const detail = await getBudgetRequestDetail(requestId);
+        
+        console.log('Loaded detail:', detail);
+        console.log('Breakdown lines:', detail.breakdown_lines);
+        
+        // Populate form with existing data
+        setMonth(detail.month || '');
+        setDescription(detail.description || '');
+        setEventName(detail.event?.name || '');
+        setEventDate(detail.event?.event_date || '');
+        setEventNotes(detail.event?.notes || '');
+        setAdminComment(detail.admin_comment || '');
+        
+        if (detail.breakdown_lines && detail.breakdown_lines.length > 0) {
+          const populated = detail.breakdown_lines.map(line => {
+            console.log('Processing line:', line);
+            return {
+              category_id: line.category_id || '',
+              description: line.description || '',
+              amount: (line.amount !== null && line.amount !== undefined) ? String(line.amount) : ''
+            };
+          });
+          console.log('Populated breakdown lines:', populated);
+          setBreakdownLines(populated);
+        } else {
+          console.log('No breakdown lines found, using default');
+          setBreakdownLines([{ category_id: '', description: '', amount: '' }]);
+        }
+      } catch (err) {
+        setError(err.message || String(err));
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
+  }, [requestId, navigate]);
 
   function addLine() {
-    setLines((prev) => [...prev, emptyLine()]);
+    setBreakdownLines([...breakdownLines, { category_id: '', description: '', amount: '' }]);
   }
 
   function removeLine(index) {
-    if (lines.length === 1) return;
-    setLines((prev) => prev.filter((_, idx) => idx !== index));
+    if (breakdownLines.length === 1) return;
+    setBreakdownLines(breakdownLines.filter((_, i) => i !== index));
+  }
+
+  function updateLine(index, field, value) {
+    const updated = [...breakdownLines];
+    updated[index][field] = value;
+    setBreakdownLines(updated);
   }
 
   async function handleSubmit(e) {
@@ -36,50 +95,100 @@ export default function NewBudgetPage() {
     setError(null);
 
     if (!month || !eventName || !eventDate) {
-      setError("Month, event name, and event date are required.");
+      setError('Month, event name, and event date are required.');
       return;
     }
 
-    const breakdown = lines
-      .filter((line) => line.description.trim() || line.amount)
-      .map((line) => ({
-        category_id: null,
-        description: line.description.trim(),
-        amount: line.amount ? parseFloat(line.amount) : null,
-      }));
-
-    const payload = {
-      month,
-      description,
-      event: {
-        name: eventName,
-        event_date: eventDate,
-        notes: eventNotes,
-      },
-      breakdown,
-    };
-
     setSubmitting(true);
+    
     try {
-      await createBudgetRequest(payload);
-      navigate("/budgets");
+      const validBreakdown = breakdownLines
+        .filter(line => line.description || line.amount)
+        .map(line => ({
+          category_id: line.category_id || null,
+          description: line.description || '',
+          amount: parseFloat(line.amount) || 0
+        }));
+
+      if (validBreakdown.length === 0) {
+        setError('At least one breakdown line is required.');
+        setSubmitting(false);
+        return;
+      }
+
+      console.log('Submitting update:', {
+        month,
+        description,
+        event: {
+          name: eventName,
+          event_date: eventDate,
+          notes: eventNotes
+        },
+        breakdown: validBreakdown
+      });
+
+      const response = await updateBudgetRequest(requestId, {
+        month,
+        description,
+        event: {
+          name: eventName,
+          event_date: eventDate,
+          notes: eventNotes
+        },
+        breakdown: validBreakdown
+      });
+      
+      console.log('Update response:', response);
+      
+      // Success - show modal instead of navigating immediately
+      setShowSuccessModal(true);
     } catch (err) {
+      console.error('Update error:', err);
       setError(err.message || String(err));
-    } finally {
       setSubmitting(false);
     }
+  }
+  
+  function handleSuccessClose() {
+    setShowSuccessModal(false);
+    navigate('/budgets', { replace: true });
+  }
+
+  if (loading) {
+    return (
+      <div style={{ maxWidth: '900px', margin: '0 auto', padding: '30px', textAlign: 'center' }}>
+        <p style={{ color: '#666', fontSize: '16px' }}>Loading request details...</p>
+      </div>
+    );
+  }
+
+  if (error && !user) {
+    return (
+      <div style={{ maxWidth: '900px', margin: '0 auto', padding: '30px' }}>
+        <div style={{ padding: '12px', background: '#f8d7da', color: '#721c24', borderRadius: '4px', borderLeft: '4px solid #dc3545' }}>
+          Error: {error}
+        </div>
+      </div>
+    );
   }
 
   return (
     <div style={{ maxWidth: '900px', margin: '0 auto', padding: '30px', background: '#ffffff', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-      <div style={{ marginBottom: '30px', borderBottom: '2px solid #6a1b9a', paddingBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h1 style={{ margin: '0', color: '#6a1b9a', fontSize: '28px', fontWeight: '600' }}>Submit Budget Request</h1>
-        <Link to="/treasurer-dashboard" className="btn btn-back">← Dashboard</Link>
+      <div style={{ marginBottom: '30px', borderBottom: '2px solid #6a1b9a', paddingBottom: '20px' }}>
+        <h1 style={{ margin: '0', color: '#6a1b9a', fontSize: '28px', fontWeight: '600' }}>Edit & Resubmit Budget Request</h1>
+        <p style={{ margin: '8px 0 0 0', color: '#666', fontSize: '14px' }}>Update your request and resubmit for approval</p>
       </div>
 
       {error && (
         <div style={{ padding: '12px', background: '#f8d7da', color: '#721c24', borderRadius: '4px', marginBottom: '20px', borderLeft: '4px solid #dc3545' }}>
           {error}
+        </div>
+      )}
+
+      {adminComment && (
+        <div style={{ padding: '16px', background: '#fff3cd', color: '#856404', borderRadius: '4px', marginBottom: '20px', borderLeft: '4px solid #ffc107' }}>
+          <div style={{ fontWeight: 'bold', marginBottom: '8px', fontSize: '14px' }}>Admin Comment:</div>
+          <div style={{ fontSize: '14px', lineHeight: '1.5' }}>{adminComment}</div>
         </div>
       )}
 
@@ -123,7 +232,7 @@ export default function NewBudgetPage() {
             value={eventName}
             onChange={(e) => setEventName(e.target.value)}
             required
-            placeholder="e.g., Paint Night"
+            placeholder="e.g., Youth Conference 2025"
             style={{ width: '100%', padding: '10px', marginBottom: '15px', border: '1px solid #ddd', borderRadius: '4px', boxSizing: 'border-box', fontSize: '14px' }}
           />
 
@@ -154,14 +263,14 @@ export default function NewBudgetPage() {
         <fieldset style={{ border: '1px solid #ddd', borderRadius: '8px', padding: '20px', marginBottom: '20px', background: '#fafafa' }}>
           <legend style={{ fontWeight: 'bold', color: '#6a1b9a', padding: '0 10px', fontSize: '16px' }}>Budget Breakdown</legend>
           <p style={{ color: '#666', marginTop: '0', fontSize: '14px' }}>
-            Provide line items for your budget breakdown.
+            Update line items for your budget breakdown.
           </p>
 
-          {lines.map((line, idx) => (
+          {breakdownLines.map((line, idx) => (
             <div key={idx} style={{ background: 'white', border: '1px solid #ddd', padding: '15px', marginBottom: '15px', borderRadius: '4px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                 <div style={{ fontWeight: 'bold', color: '#666' }}>Line Item {idx + 1}</div>
-                {lines.length > 1 && (
+                {breakdownLines.length > 1 && (
                   <button
                     type="button"
                     onClick={() => removeLine(idx)}
@@ -215,12 +324,12 @@ export default function NewBudgetPage() {
             className="btn primary"
             style={{ padding: '12px 24px', border: 'none', borderRadius: '4px', fontSize: '16px', cursor: submitting ? 'not-allowed' : 'pointer', background: '#6a1b9a', color: 'white', fontWeight: 'bold', opacity: submitting ? 0.6 : 1 }}
           >
-            {submitting ? "Submitting…" : "Submit Request"}
+            {submitting ? "Updating…" : "Update & Resubmit"}
           </button>
           <button
             type="button"
             className="btn btn-back"
-            onClick={() => navigate("/budgets")}
+            onClick={goBack}
             style={{ padding: '12px 24px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '16px', cursor: 'pointer', background: 'transparent', color: '#333', fontWeight: 'bold' }}
           >
             Cancel
@@ -231,13 +340,39 @@ export default function NewBudgetPage() {
       {/* Back Links */}
       <div style={{ marginTop: '20px', textAlign: 'center', paddingTop: '20px', borderTop: '1px solid #eee' }}>
         <button 
-          onClick={() => navigate("/budgets")}
+          onClick={goBack}
           className="btn btn-back"
-          style={{ textDecoration: 'none', color: '#6a1b9a', border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '14px' }}
+          style={{ marginRight: '10px', textDecoration: 'none', color: '#6a1b9a', border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '14px' }}
         >
-          ← View My Requests
+          ← Back
+        </button>
+        <span style={{ color: '#ddd' }}>|</span>
+        <button 
+          onClick={() => navigate("/treasurer-dashboard")}
+          style={{ marginLeft: '10px', textDecoration: 'none', color: '#6a1b9a', border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '14px' }}
+        >
+          ← Dashboard
         </button>
       </div>
+
+      {/* Success Modal */}
+      {showSuccessModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div style={{ background: 'white', borderRadius: '8px', padding: '30px', maxWidth: '400px', width: '90%', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
+            <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+              <div style={{ fontSize: '48px', color: '#4caf50', marginBottom: '10px' }}>✓</div>
+              <h2 style={{ margin: '0 0 10px 0', color: '#333', fontSize: '24px' }}>Successfully Resubmitted!</h2>
+              <p style={{ color: '#666', margin: 0 }}>Your budget request has been updated and is now pending approval.</p>
+            </div>
+            <button
+              onClick={handleSuccessClose}
+              style={{ width: '100%', padding: '12px', background: '#6a1b9a', color: 'white', border: 'none', borderRadius: '4px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer' }}
+            >
+              Back to Budget Requests
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

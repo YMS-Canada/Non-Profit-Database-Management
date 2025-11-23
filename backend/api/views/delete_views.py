@@ -1,9 +1,9 @@
 from django.shortcuts import redirect
-from django.db import connection
+from django.db import connection, transaction
 from django.contrib import messages
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_POST, require_http_methods
 from .auth_views import get_current_user, require_role, require_login
 
 
@@ -82,7 +82,7 @@ def delete_budget_request(request, request_id):
 # ---------- API DELETE Views ----------
 
 @csrf_exempt
-@require_POST
+@require_http_methods(["DELETE"])
 def api_delete_user(request, user_id):
     """DELETE: Deactivate user via API (ADMIN only)"""
     if not require_role(request, 'ADMIN'):
@@ -109,13 +109,18 @@ def api_delete_user(request, user_id):
 
 
 @csrf_exempt
-@require_POST
+@require_http_methods(["DELETE"])
+@transaction.atomic
 def api_delete_budget_request(request, request_id):
-    """DELETE: Delete budget request via API (owner or ADMIN, PENDING only)"""
+    """DELETE: Delete budget request via API (owner only, PENDING or REJECTED only)"""
     user_id, role, _ = get_current_user(request)
     
     if not user_id:
         return JsonResponse({'detail': 'Unauthorized'}, status=401)
+    
+    # Only treasurers can delete their own requests
+    if role != 'TREASURER':
+        return JsonResponse({'detail': 'Only treasurers can delete budget requests'}, status=403)
     
     with connection.cursor() as cur:
         # Check ownership and status
@@ -131,13 +136,30 @@ def api_delete_budget_request(request, request_id):
         
         requester_id, status = row
         
-        if status != 'PENDING':
-            return JsonResponse({'detail': 'Only PENDING requests can be deleted'}, status=400)
+        # Check ownership
+        if requester_id != user_id:
+            return JsonResponse({'detail': 'You can only delete your own budget requests'}, status=403)
         
-        if requester_id != user_id and role != 'ADMIN':
-            return JsonResponse({'detail': 'Forbidden'}, status=403)
+        # Check status - only PENDING or REJECTED can be deleted
+        if status not in ('PENDING', 'REJECTED'):
+            return JsonResponse({'detail': 'Only PENDING or REJECTED requests can be deleted'}, status=400)
         
-        # Delete request
+        # Manually delete in correct order due to foreign key constraints
+        # First, delete breakdown lines
+        cur.execute("""
+            DELETE FROM requested_break_down_line 
+            WHERE req_event_id IN (
+                SELECT req_event_id FROM requested_event WHERE request_id = %s
+            )
+        """, [request_id])
+        
+        # Then delete the event
+        cur.execute("DELETE FROM requested_event WHERE request_id = %s", [request_id])
+        
+        # Delete any approval records (for REJECTED requests)
+        cur.execute("DELETE FROM approval WHERE request_id = %s", [request_id])
+        
+        # Finally delete the budget request
         cur.execute("DELETE FROM budget_request WHERE request_id = %s", [request_id])
     
     return JsonResponse({'request_id': request_id, 'deleted': True})
