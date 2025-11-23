@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getCurrentUser } from '../lib/api';
+import { getCurrentUser, getTreasurerDashboard } from '../lib/api';
 import './Dashboard.css';
 
 function TreasurerDashboard() {
@@ -23,9 +23,18 @@ function TreasurerDashboard() {
         }
         setUser(currentUser);
         
-        // You can fetch treasurer-specific stats here
-        // For now, using placeholder data
+        // Fetch treasurer dashboard stats
+        const dashboardData = await getTreasurerDashboard();
+        if (dashboardData.stats) {
+          setStats({
+            myRequests: dashboardData.stats.total || 0,
+            pendingRequests: dashboardData.stats.pending || 0,
+            approvedRequests: dashboardData.stats.approved || 0,
+            rejectedRequests: dashboardData.stats.rejected || 0
+          });
+        }
       } catch (err) {
+        console.error('Dashboard error:', err);
         navigate('/login');
       }
     };

@@ -1,24 +1,28 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { getBudgetRequests, approveBudgetRequest, rejectBudgetRequest } from "../lib/api";
+import { Link, useNavigate } from "react-router-dom";
+import { getBudgetRequests, approveBudgetRequest, rejectBudgetRequest, deleteBudgetRequest, getCurrentUser } from "../lib/api";
 import './BudgetListPage.css';
 
-// BudgetListPage: loads budget requests and shows approve/reject for admins
+// BudgetListPage: loads budget requests and shows approve/reject for admins, edit/delete for treasurers
 
 export default function BudgetListPage() {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [processingId, setProcessingId] = useState(null);
-
-  // Try to read role from localStorage; allow override via window.__USER_ROLE
-  const roleFromStorage = typeof window !== 'undefined' && (localStorage.getItem('role') || window.__USER_ROLE);
-  const role = roleFromStorage || null;
+  const [user, setUser] = useState(null);
+  const [showCommentModal, setShowCommentModal] = useState(false);
+  const [commentAction, setCommentAction] = useState(null); // { type: 'approve'|'reject', requestId: number }
+  const [comment, setComment] = useState('');
+  const navigate = useNavigate();
 
   async function loadData() {
     setLoading(true);
     setError(null);
     try {
+      const currentUser = await getCurrentUser();
+      setUser(currentUser);
+      
       const data = await getBudgetRequests();
       setRows(Array.isArray(data) ? data : []);
     } catch (err) {
@@ -33,10 +37,24 @@ export default function BudgetListPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function handleApprove(id) {
-    setProcessingId(id);
+  function openCommentModal(type, requestId) {
+    setCommentAction({ type, requestId });
+    setComment('');
+    setShowCommentModal(true);
+  }
+
+  function closeCommentModal() {
+    setShowCommentModal(false);
+    setCommentAction(null);
+    setComment('');
+  }
+
+  async function handleApproveWithComment() {
+    if (!commentAction) return;
+    setProcessingId(commentAction.requestId);
     try {
-      await approveBudgetRequest(id);
+      await approveBudgetRequest(commentAction.requestId, comment);
+      closeCommentModal();
       await loadData();
     } catch (err) {
       setError(err.message || String(err));
@@ -45,10 +63,33 @@ export default function BudgetListPage() {
     }
   }
 
-  async function handleReject(id) {
+  async function handleRejectWithComment() {
+    if (!commentAction) return;
+    
+    // Require comment for rejection
+    if (!comment.trim()) {
+      setError('Please provide a reason for rejection to help the requester.');
+      return;
+    }
+    
+    setProcessingId(commentAction.requestId);
+    try {
+      await rejectBudgetRequest(commentAction.requestId, comment);
+      closeCommentModal();
+      await loadData();
+    } catch (err) {
+      setError(err.message || String(err));
+    } finally {
+      setProcessingId(null);
+    }
+  }
+
+  async function handleDelete(id) {
+    if (!window.confirm('Are you sure you want to delete this request?')) return;
+    
     setProcessingId(id);
     try {
-      await rejectBudgetRequest(id);
+      await deleteBudgetRequest(id);
       await loadData();
     } catch (err) {
       setError(err.message || String(err));
@@ -60,6 +101,9 @@ export default function BudgetListPage() {
   if (loading) return <p className="bl-page">Loading…</p>;
   if (error) return <p className="bl-page bl-error">Error: {error}</p>;
 
+  const role = user?.role;
+  const userId = user?.user_id;
+
   return (
     <div className="bl-page">
       <div className="bl-header">
@@ -68,8 +112,11 @@ export default function BudgetListPage() {
           <p className="muted">All recent requests. Approve or reject pending items.</p>
         </div>
         <div className="bl-controls">
+          <Link to="/admin-dashboard" className="btn btn-back">← Dashboard</Link>
           <button className="btn ghost" onClick={loadData} disabled={loading}>Refresh</button>
-          <Link to="/budgets/new" className="btn primary">New Request</Link>
+          {role === 'TREASURER' && (
+            <Link to="/budgets/new" className="btn primary">New Request</Link>
+          )}
         </div>
       </div>
 
@@ -88,17 +135,70 @@ export default function BudgetListPage() {
                 <div className="bl-meta">Requester: <span className="muted">{r.requester || '—'}</span></div>
               </div>
               <footer className="bl-card-actions">
-                {r.status === 'PENDING' && role === 'ADMIN' ? (
+                {role === 'ADMIN' ? (
                   <div className="action-group">
-                    <button className="btn success" onClick={() => handleApprove(r.request_id)} disabled={processingId===r.request_id}>{processingId===r.request_id ? '…' : 'Approve'}</button>
-                    <button className="btn danger" onClick={() => handleReject(r.request_id)} disabled={processingId===r.request_id}>{processingId===r.request_id ? '…' : 'Reject'}</button>
+                    <Link to={`/admin/requests/${r.request_id}`} state={{ from: '/budgets' }} className="view-link">View Details</Link>
                   </div>
+                ) : role === 'TREASURER' && r.requester_id === userId ? (
+                  r.status === 'REJECTED' ? (
+                    <div className="action-group">
+                      <button className="btn primary" onClick={() => navigate(`/budgets/${r.request_id}/edit`, { state: { from: '/budgets' } })} disabled={processingId===r.request_id}>Edit & Resubmit</button>
+                      <button className="btn danger" onClick={() => handleDelete(r.request_id)} disabled={processingId===r.request_id}>{processingId===r.request_id ? '…' : 'Delete'}</button>
+                    </div>
+                  ) : r.status === 'PENDING' ? (
+                    <div className="action-group">
+                      <button className="btn danger" onClick={() => handleDelete(r.request_id)} disabled={processingId===r.request_id}>{processingId===r.request_id ? '…' : 'Delete'}</button>
+                    </div>
+                  ) : (
+                    <span className="muted">{r.status}</span>
+                  )
                 ) : (
                   <span className="muted">{r.status}</span>
                 )}
               </footer>
             </article>
           ))}
+        </div>
+      )}
+
+      {/* Comment Modal */}
+      {showCommentModal && (
+        <div className="modal-overlay" onClick={closeCommentModal}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <h2>{commentAction?.type === 'approve' ? 'Approve Budget Request' : 'Reject Budget Request'}</h2>
+            <p>
+              {commentAction?.type === 'approve' 
+                ? 'Add an optional note for the requester:' 
+                : 'Please explain why this request is being rejected (required):'}
+            </p>
+            <textarea
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              placeholder={
+                commentAction?.type === 'approve'
+                  ? 'e.g., Approved with full budget allocation...'
+                  : 'e.g., Please provide more detailed breakdown of expenses, or This exceeds the monthly budget limit...'
+              }
+              rows="5"
+              className={commentAction?.type === 'reject' ? 'required-field' : ''}
+              style={{ width: '100%', padding: '10px', marginTop: '10px', marginBottom: '15px' }}
+            />
+            {commentAction?.type === 'reject' && !comment.trim() && (
+              <p className="error-hint" style={{ color: '#ef4444', fontSize: '13px', marginTop: '-10px', marginBottom: '10px' }}>
+                * Comment is required for rejection to help the requester understand what needs to be changed.
+              </p>
+            )}
+            <div className="modal-actions">
+              <button className="btn ghost" onClick={closeCommentModal}>Cancel</button>
+              <button 
+                className={`btn ${commentAction?.type === 'approve' ? 'success' : 'danger'}`}
+                onClick={commentAction?.type === 'approve' ? handleApproveWithComment : handleRejectWithComment}
+                disabled={processingId !== null}
+              >
+                {processingId !== null ? 'Processing...' : (commentAction?.type === 'approve' ? 'Approve' : 'Reject')}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

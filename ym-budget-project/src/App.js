@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
 import Home from './pages/Home';
 import BudgetForm from './pages/BudgetForm';
@@ -9,7 +9,9 @@ import Navbar from './components/Navbar';
 import BudgetListPage from "./pages/BudgetListPage";
 import PendingRequestsPage from "./pages/PendingRequestsPage";
 import NewBudgetPage from "./pages/NewBudgetPage";
+import BudgetEditPage from "./pages/BudgetEditPage";
 import CreateUserPage from "./pages/CreateUserPage";
+import MonthlyReportsPage from "./pages/MonthlyReportsPage";
 import Login from './pages/Login';
 import AdminDashboard from './pages/AdminDashboard';
 import TreasurerDashboard from './pages/TreasurerDashboard';
@@ -55,6 +57,11 @@ function App() {
                 <RequestDetailPage />
               </ProtectedRoute>
             } />
+            <Route path="/admin/reports/monthly" element={
+              <ProtectedRoute requiredRole="ADMIN">
+                <MonthlyReportsPage />
+              </ProtectedRoute>
+            } />
             
             {/* Treasurer Routes */}
             <Route path="/treasurer-dashboard" element={
@@ -72,6 +79,11 @@ function App() {
             <Route path="/budgets/new" element={
               <ProtectedRoute requiredRole="TREASURER">
                 <NewBudgetPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/budgets/:requestId/edit" element={
+              <ProtectedRoute requiredRole="TREASURER">
+                <BudgetEditPage />
               </ProtectedRoute>
             } />
             

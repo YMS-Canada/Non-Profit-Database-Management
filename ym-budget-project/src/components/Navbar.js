@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'; // Import React and useState
 import * as FaIcons from 'react-icons/fa'; // Import all FontAwesome icons as FaIcons
 import * as AiIcons from 'react-icons/ai'; // Import all Ant Design icons as AiIcons
 import { Link, useNavigate } from 'react-router-dom'; // Import Link for client-side navigation
-import {Sidebar} from './Sidebar'; // Import Sidebar data (menu items)
+import { getSidebarItems } from './Sidebar'; // Import Sidebar function
 import './Navbar.css'; // Import CSS for Navbar styling
 import { IconContext } from 'react-icons'; // Import IconContext to set icon properties globally
 import { logout } from '../lib/api';
@@ -10,6 +10,7 @@ import { logout } from '../lib/api';
 function Navbar() {
     const [sidebar, setSidebar] = useState(false); // State to track if sidebar is open
     const [user, setUser] = useState(null);
+    const [sidebarItems, setSidebarItems] = useState([]);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -18,13 +19,18 @@ function Navbar() {
             const storedUser = localStorage.getItem('user');
             if (storedUser) {
                 try {
-                    setUser(JSON.parse(storedUser));
+                    const userData = JSON.parse(storedUser);
+                    setUser(userData);
+                    // Set sidebar items based on user role
+                    setSidebarItems(getSidebarItems(userData.role));
                 } catch (e) {
                     localStorage.removeItem('user');
                     setUser(null);
+                    setSidebarItems(getSidebarItems(null));
                 }
             } else {
                 setUser(null);
+                setSidebarItems(getSidebarItems(null));
             }
         };
         
@@ -90,7 +96,7 @@ function Navbar() {
                     </Link>
                 </li>
                 {/* Render each sidebar item from Sidebar data */}
-                {Sidebar.map((item, index) => {
+                {sidebarItems.map((item, index) => {
                     return (
                         <li key={index} className={item.cName}>
                             <Link to={item.path}>

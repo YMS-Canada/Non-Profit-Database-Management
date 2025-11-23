@@ -20,9 +20,12 @@ def _list_requests_for_api(user_id, role, city_id):
                br.description,
                br.status,
                br.created_at,
-               u.name AS requester_name
+               u.name AS requester_name,
+               br.requester_id,
+               COALESCE(re.total_amount, 0) AS total_amount
         FROM budget_request br
         LEFT JOIN users u ON u.user_id = br.requester_id
+        LEFT JOIN requested_event re ON re.request_id = br.request_id
     """
     params = []
     if role == 'ADMIN':
@@ -44,11 +47,13 @@ def _list_requests_for_api(user_id, role, city_id):
     return [
         {
             "request_id": r[0],
-            "month": r[1],
+            "month": r[1].isoformat() if r[1] else None,
             "description": r[2],
             "status": r[3],
-            "created_at": r[4],
+            "created_at": r[4].isoformat() if r[4] else None,
             "requester": r[5],
+            "requester_id": r[6],
+            "total_amount": float(r[7]) if r[7] else 0,
         }
         for r in rows
     ]
@@ -189,7 +194,214 @@ api_budget_list = api_budget_requests
 api_budget_create = api_budget_requests
 
 
-def _update_request_status(request_id, new_status, decision, approver_id):
+@csrf_exempt
+def api_budget_request_detail(request, request_id):
+    """
+    GET: Return detailed information about a specific budget request
+    PUT: Update and resubmit a budget request (sets status to PENDING)
+    """
+    user_id, role, city_id = get_current_user(request)
+    
+    # Check if user is logged in
+    if not user_id:
+        return JsonResponse({'detail': 'Authentication required'}, status=401)
+    
+    if request.method == 'GET':
+        # Fetch request details with event and breakdown lines
+        try:
+            with connection.cursor() as cur:
+                # Get request and event details
+                cur.execute("""
+                    SELECT 
+                        br.request_id,
+                        br.requester_id,
+                        br.month,
+                        br.description,
+                        br.status,
+                        br.created_at,
+                        re.name,
+                        re.event_date,
+                        re.notes,
+                        re.total_amount
+                    FROM budget_request br
+                    LEFT JOIN requested_event re ON br.request_id = re.request_id
+                    WHERE br.request_id = %s
+                """, [request_id])
+                
+                row = cur.fetchone()
+                if not row:
+                    return JsonResponse({'detail': 'Request not found'}, status=404)
+                
+                # Build request object
+                request_data = {
+                    'request_id': row[0],
+                    'requester_id': row[1],
+                    'month': row[2].isoformat() if row[2] else None,
+                    'description': row[3],
+                    'status': row[4],
+                    'created_at': row[5].isoformat() if row[5] else None,
+                    'event': {
+                        'name': row[6],
+                        'event_date': row[7].isoformat() if row[7] else None,
+                        'notes': row[8],
+                        'total_amount': float(row[9]) if row[9] else 0,
+                    }
+                }
+                
+                # Get breakdown lines (linked through event)
+                cur.execute("""
+                    SELECT rbl.line_id, rbl.description, rbl.amount, rbl.category_id
+                    FROM requested_break_down_line rbl
+                    JOIN requested_event re ON rbl.req_event_id = re.req_event_id
+                    WHERE re.request_id = %s
+                    ORDER BY rbl.line_id
+                """, [request_id])
+                
+                breakdown_lines = []
+                for line_row in cur.fetchall():
+                    breakdown_lines.append({
+                        'line_id': line_row[0],
+                        'description': line_row[1],
+                        'amount': float(line_row[2]) if line_row[2] else 0,
+                        'category_id': line_row[3],
+                    })
+                
+                request_data['breakdown_lines'] = breakdown_lines
+                
+                # Get approval/rejection comment if exists
+                cur.execute("""
+                    SELECT note, decided_at, decision
+                    FROM approval
+                    WHERE request_id = %s
+                    ORDER BY decided_at DESC
+                    LIMIT 1
+                """, [request_id])
+                
+                approval_row = cur.fetchone()
+                if approval_row:
+                    request_data['admin_comment'] = approval_row[0]
+                    request_data['decided_at'] = approval_row[1].isoformat() if approval_row[1] else None
+                    request_data['decision'] = approval_row[2]
+                
+                return JsonResponse(request_data, status=200)
+                
+        except Exception as e:
+            return JsonResponse({'detail': str(e)}, status=500)
+    
+    elif request.method == 'PUT':
+        # Update budget request and reset to PENDING
+        
+        # Only treasurers can update their own requests
+        if role != 'TREASURER':
+            return JsonResponse({'detail': 'Only treasurers can update requests'}, status=403)
+        
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse({'detail': 'Invalid JSON'}, status=400)
+        
+        # Validate ownership
+        try:
+            with connection.cursor() as cur:
+                cur.execute(
+                    "SELECT requester_id FROM budget_request WHERE request_id = %s",
+                    [request_id]
+                )
+                row = cur.fetchone()
+                if not row:
+                    return JsonResponse({'detail': 'Request not found'}, status=404)
+                
+                if row[0] != user_id:
+                    return JsonResponse({'detail': 'You can only edit your own requests'}, status=403)
+        except Exception as e:
+            return JsonResponse({'detail': str(e)}, status=500)
+        
+        # Extract fields
+        month = data.get('month')
+        description = data.get('description', '')
+        
+        # Extract event data (nested structure from frontend)
+        event_data = data.get('event', {})
+        event_name = event_data.get('name')
+        event_date = event_data.get('event_date')
+        event_notes = event_data.get('notes', '')  # Frontend sends 'notes' not 'event_notes'
+        
+        # Extract breakdown lines
+        breakdown_lines = data.get('breakdown', [])
+        
+        if not month:
+            return JsonResponse({'detail': 'Month is required'}, status=400)
+        if not event_name:
+            return JsonResponse({'detail': 'Event name is required'}, status=400)
+        if not breakdown_lines:
+            return JsonResponse({'detail': 'At least one breakdown line is required'}, status=400)
+        
+        # Calculate total
+        try:
+            amount_requested = sum(float(line.get('amount', 0)) for line in breakdown_lines)
+        except (ValueError, TypeError):
+            return JsonResponse({'detail': 'Invalid breakdown amounts'}, status=400)
+        
+        # Update database
+        try:
+            with connection.cursor() as cur:
+                # Update budget_request (reset status to PENDING)
+                cur.execute("""
+                    UPDATE budget_request 
+                    SET month = %s, description = %s, status = 'PENDING'
+                    WHERE request_id = %s
+                """, [month, description, request_id])
+                
+                # Delete old breakdown lines first (before deleting event due to foreign key)
+                cur.execute("""
+                    DELETE FROM requested_break_down_line 
+                    WHERE req_event_id IN (
+                        SELECT req_event_id FROM requested_event WHERE request_id = %s
+                    )
+                """, [request_id])
+                
+                # Delete old event
+                cur.execute(
+                    "DELETE FROM requested_event WHERE request_id = %s",
+                    [request_id]
+                )
+                
+                # Insert new event and get its ID
+                req_event_id = None
+                if event_name:
+                    # Calculate total amount
+                    total_amount = sum(float(line.get('amount', 0)) for line in breakdown_lines)
+                    
+                    cur.execute("""
+                        INSERT INTO requested_event (request_id, name, event_date, notes, total_amount)
+                        VALUES (%s, %s, %s, %s, %s)
+                        RETURNING req_event_id
+                    """, [request_id, event_name, event_date, event_notes, total_amount])
+                    req_event_id = cur.fetchone()[0]
+                
+                    # Insert new breakdown lines linked to the event
+                    for line in breakdown_lines:
+                        line_desc = line.get('description', '')
+                        line_amt = float(line.get('amount', 0))
+                        category_id = line.get('category_id')
+                        cur.execute("""
+                            INSERT INTO requested_break_down_line (req_event_id, description, amount, category_id)
+                            VALUES (%s, %s, %s, %s)
+                        """, [req_event_id, line_desc, line_amt, category_id])
+            
+            return JsonResponse({
+                'request_id': request_id,
+                'status': 'PENDING',
+                'message': 'Budget request updated successfully'
+            }, status=200)
+            
+        except Exception as e:
+            return JsonResponse({'detail': str(e)}, status=500)
+    
+    return JsonResponse({'detail': 'Method not allowed'}, status=405)
+
+
+def _update_request_status(request_id, new_status, decision, approver_id, comment=None):
     """
     Updates budget_request status and inserts approval record.
     Returns JsonResponse with request_id and new status.
@@ -211,13 +423,13 @@ def _update_request_status(request_id, new_status, decision, approver_id):
                 [new_status, request_id],
             )
             
-            # Insert approval record
+            # Insert approval record with optional comment
             cur.execute(
                 """
                 INSERT INTO approval (request_id, approver_id, decision, note, decided_at)
-                VALUES (%s, %s, %s, NULL, NOW())
+                VALUES (%s, %s, %s, %s, NOW())
             """,
-                [request_id, approver_id, decision],
+                [request_id, approver_id, decision, comment],
             )
         return JsonResponse({'request_id': request_id, 'status': new_status})
     except Exception as exc:
@@ -232,14 +444,24 @@ def _update_request_status(request_id, new_status, decision, approver_id):
 def api_budget_approve(request, request_id):
     """
     ADMIN-only: Approve a budget request via API.
+    Accepts optional comment in request body.
     Returns JSON { request_id, status: "APPROVED" }
     """
     if not require_role(request, 'ADMIN'):
         return JsonResponse({'detail': 'Forbidden'}, status=403)
 
     user_id, _, _ = get_current_user(request)
+    
+    # Get optional comment from request body
+    comment = None
+    try:
+        data = json.loads(request.body)
+        comment = data.get('comment', '').strip() or None
+    except (json.JSONDecodeError, AttributeError):
+        pass
+    
     response = _update_request_status(
-        request_id, 'APPROVED', 'YES', user_id
+        request_id, 'APPROVED', 'YES', user_id, comment
     )
     return response
 
@@ -249,14 +471,24 @@ def api_budget_approve(request, request_id):
 def api_budget_reject(request, request_id):
     """
     ADMIN-only: Reject a budget request via API.
+    Accepts optional comment in request body.
     Returns JSON { request_id, status: "REJECTED" }
     """
     if not require_role(request, 'ADMIN'):
         return JsonResponse({'detail': 'Forbidden'}, status=403)
 
     user_id, _, _ = get_current_user(request)
+    
+    # Get optional comment from request body
+    comment = None
+    try:
+        data = json.loads(request.body)
+        comment = data.get('comment', '').strip() or None
+    except (json.JSONDecodeError, AttributeError):
+        pass
+    
     response = _update_request_status(
-        request_id, 'REJECTED', 'NO-PLEASE RESEND', user_id
+        request_id, 'REJECTED', 'NO-PLEASE RESEND', user_id, comment
     )
     return response
 
@@ -399,10 +631,12 @@ def api_pending_requests(request):
                          br.status,
                          u.name AS requester_name,
                          u.email AS requester_email,
-                         br.created_at
+                         br.created_at,
+                         re.total_amount
                 FROM budget_request br
                 JOIN city c ON c.city_id = br.city_id
                 LEFT JOIN users u ON u.user_id = br.requester_id
+                LEFT JOIN requested_event re ON br.request_id = re.request_id
                 WHERE br.status IN ('PENDING', 'REJECTED')
                 ORDER BY 
                     CASE WHEN br.status = 'PENDING' THEN 0 ELSE 1 END,
@@ -436,6 +670,7 @@ def api_pending_requests(request):
                 'requester_email': r[6],
                 'created_at': created_at,
                 'updated_at': updated_at,
+                'amount': float(r[8]) if r[8] is not None else 0,
             })
 
         return JsonResponse({'requests': requests})

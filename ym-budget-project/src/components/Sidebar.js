@@ -9,39 +9,74 @@ import * as IoIcons from 'react-icons/io';
 // Import Material Design icons for better variety
 import * as MdIcons from 'react-icons/md';
 
-// Export an array called Sidebar, which contains objects for each sidebar menu item
-export const Sidebar = [
-    {
-        // The label shown in the sidebar
-        title: 'Home',
-        // The route path to navigate to when this item is clicked
-        path: '/',
-        // The icon displayed next to the title (Ant Design Home icon)
-        icon: <AiIcons.AiFillHome />,
-        // The CSS class name for styling this menu item
-        cName: 'nav-text'
-    },
-    {
-        title: 'Dashboard',
-        // Use the SPA admin dashboard route to avoid colliding with Django's /admin/ URL
-        path: '/admin-dashboard',
-        // Material Design Admin Panel icon
-        icon: <MdIcons.MdAdminPanelSettings />,
-        cName: 'nav-text'
-    },
-    {
-        title: 'Budget Form',
-        path: '/form',
-        // FontAwesome Dollar Sign icon (budget-related)
-        icon: <FaIcons.FaWpforms />,
-        cName: 'nav-text'
-    },
-    {
-        title: 'My Budget Requests',
-        path: '/budgets',                // 👈 this matches your route
-        icon: <FaIcons.FaListAlt />,     // pick whatever icon you like
-        cName: 'nav-text'
-    },
-    // Dashboard removed per user request
-    // You can add more menu items here by adding more objects to this array
-]
+// Function to get sidebar items based on user role
+export const getSidebarItems = (role) => {
+    // Common items for all roles
+    const commonItems = [
+        {
+            title: 'Home',
+            path: '/',
+            icon: <AiIcons.AiFillHome />,
+            cName: 'nav-text'
+        },
+        {
+            title: 'Dashboard',
+            path: role === 'ADMIN' ? '/admin-dashboard' : '/treasurer-dashboard',
+            icon: <MdIcons.MdDashboard />,
+            cName: 'nav-text'
+        }
+    ];
+
+    // Role-specific items
+    if (role === 'TREASURER') {
+        return [
+            ...commonItems,
+            {
+                title: 'Budget Form',
+                path: '/budgets/new',
+                icon: <FaIcons.FaWpforms />,
+                cName: 'nav-text'
+            },
+            {
+                title: 'My Budget Requests',
+                path: '/budgets',
+                icon: <FaIcons.FaListAlt />,
+                cName: 'nav-text'
+            }
+        ];
+    } else if (role === 'ADMIN') {
+        return [
+            ...commonItems,
+            {
+                title: 'Pending Requests',
+                path: '/admin/pending-requests',
+                icon: <FaIcons.FaClock />,
+                cName: 'nav-text'
+            },
+            {
+                title: 'All Requests',
+                path: '/budgets',
+                icon: <FaIcons.FaListAlt />,
+                cName: 'nav-text'
+            },
+            {
+                title: 'Monthly Reports',
+                path: '/admin/reports/monthly',
+                icon: <FaIcons.FaChartBar />,
+                cName: 'nav-text'
+            },
+            {
+                title: 'Create Account',
+                path: '/admin/create-user',
+                icon: <FaIcons.FaUserPlus />,
+                cName: 'nav-text'
+            }
+        ];
+    }
+
+    // Default items (if no role or unknown role)
+    return commonItems;
+};
+
+// Keep old export for backward compatibility (defaults to TREASURER view)
+export const Sidebar = getSidebarItems('TREASURER');

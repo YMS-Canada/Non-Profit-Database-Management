@@ -1,13 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { getPendingRequests, approveBudgetRequest, rejectBudgetRequest } from '../lib/api';
+import { getPendingRequests } from '../lib/api';
 import './PendingRequestsPage.css';
 
 export default function PendingRequestsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [requests, setRequests] = useState([]);
-  const [processingId, setProcessingId] = useState(null);
 
   async function loadData() {
     setLoading(true);
@@ -26,30 +25,6 @@ export default function PendingRequestsPage() {
     loadData();
   }, []);
 
-  async function handleApprove(id) {
-    setProcessingId(id);
-    try {
-      await approveBudgetRequest(id);
-      await loadData(); // Refresh the list
-    } catch (err) {
-      setError(err.message || String(err));
-    } finally {
-      setProcessingId(null);
-    }
-  }
-
-  async function handleReject(id) {
-    setProcessingId(id);
-    try {
-      await rejectBudgetRequest(id);
-      await loadData(); // Refresh the list
-    } catch (err) {
-      setError(err.message || String(err));
-    } finally {
-      setProcessingId(null);
-    }
-  }
-
   // Separate requests by status
   const pendingRequests = requests.filter(r => r.status === 'PENDING');
   const rejectedRequests = requests.filter(r => r.status === 'REJECTED');
@@ -67,7 +42,7 @@ export default function PendingRequestsPage() {
           <p className="muted">Review and approve or reject budget requests from cities.</p>
         </div>
         <div className="pr-actions">
-          <Link to="/admin-dashboard" className="btn secondary">Back to Dashboard</Link>
+          <Link to="/admin-dashboard" className="btn btn-back">← Dashboard</Link>
         </div>
       </div>
 
@@ -85,7 +60,7 @@ export default function PendingRequestsPage() {
                 </div>
                 <div className="req-body">
                   <div className="req-item"><strong>Month:</strong> {req.month || '—'}</div>
-                  <div className="req-item"><strong>Amount:</strong> {req.amount ? `$${req.amount}` : '—'}</div>
+                  <div className="req-item"><strong>Amount:</strong> {req.amount ? `$${req.amount.toFixed(2)}` : '—'}</div>
                   <div className="req-desc">{req.description || 'No description provided.'}</div>
                 </div>
                 <div className="req-meta">
@@ -94,9 +69,7 @@ export default function PendingRequestsPage() {
                   <div className="small muted">Submitted: {formatDate(req.created_at)}</div>
                 </div>
                 <div className="req-actions">
-                  <button className="btn approve" onClick={() => handleApprove(req.request_id)} disabled={processingId===req.request_id}>{processingId===req.request_id ? '…' : 'Approve'}</button>
-                  <button className="btn reject" onClick={() => handleReject(req.request_id)} disabled={processingId===req.request_id}>{processingId===req.request_id ? '…' : 'Reject'}</button>
-                  <Link to={`/admin/requests/${req.request_id}`} className="link view">View</Link>
+                  <Link to={`/admin/requests/${req.request_id}`} state={{ from: '/admin/pending-requests' }} className="view-link">View & Review</Link>
                 </div>
               </article>
             ))}
@@ -118,6 +91,7 @@ export default function PendingRequestsPage() {
                 </div>
                 <div className="req-body">
                   <div className="req-item"><strong>Month:</strong> {req.month || '—'}</div>
+                  <div className="req-item"><strong>Amount:</strong> {req.amount ? `$${req.amount.toFixed(2)}` : '—'}</div>
                   <div className="req-desc">{req.description || 'No description provided.'}</div>
                 </div>
                 <div className="req-meta">
@@ -126,7 +100,7 @@ export default function PendingRequestsPage() {
                 </div>
                 <div className="req-actions">
                   <span className="status rejected">REJECTED</span>
-                  <Link to={`/admin/requests/${req.request_id}`} className="link view">View</Link>
+                  <Link to={`/admin/requests/${req.request_id}`} state={{ from: '/admin/pending-requests' }} className="view-link">View</Link>
                 </div>
               </article>
             ))}

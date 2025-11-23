@@ -1,15 +1,21 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { getPendingRequests, approveBudgetRequest, rejectBudgetRequest } from '../lib/api';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { getBudgetRequestDetail, approveBudgetRequest, rejectBudgetRequest } from '../lib/api';
 import './RequestDetailPage.css';
 
 export default function RequestDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const fromPage = location.state?.from || '/admin/pending-requests';
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [request, setRequest] = useState(null);
   const [processing, setProcessing] = useState(false);
+  const [showCommentModal, setShowCommentModal] = useState(false);
+  const [commentAction, setCommentAction] = useState(null); // 'approve' or 'reject'
+  const [comment, setComment] = useState('');
+  const [commentError, setCommentError] = useState('');
 
   useEffect(() => {
     let mounted = true;
@@ -17,13 +23,9 @@ export default function RequestDetailPage() {
       setLoading(true);
       setError(null);
       try {
-        const data = await getPendingRequests();
-        const list = Array.isArray(data.requests) ? data.requests : (data || []);
-        const found = list.find((r) => String(r.request_id) === String(id));
-        if (!found) {
-          setError('Request not found');
-        } else if (mounted) {
-          setRequest(found);
+        const data = await getBudgetRequestDetail(id);
+        if (mounted) {
+          setRequest(data);
         }
       } catch (err) {
         setError(err.message || String(err));
@@ -35,27 +37,34 @@ export default function RequestDetailPage() {
     return () => { mounted = false; };
   }, [id]);
 
-  async function handleApprove() {
-    setProcessing(true);
-    try {
-      await approveBudgetRequest(id);
-      navigate('/admin/pending-requests');
-    } catch (err) {
-      setError(err.message || String(err));
-    } finally {
-      setProcessing(false);
-    }
+  function openCommentModal(action) {
+    setCommentAction(action);
+    setComment('');
+    setCommentError('');
+    setShowCommentModal(true);
   }
 
-  async function handleReject() {
+  function closeCommentModal() {
+    setShowCommentModal(false);
+    setCommentAction(null);
+    setComment('');
+    setCommentError('');
+  }
+
+  async function handleSubmitWithComment() {
     setProcessing(true);
     try {
-      await rejectBudgetRequest(id);
-      navigate('/admin/pending-requests');
+      if (commentAction === 'approve') {
+        await approveBudgetRequest(id, comment.trim() || undefined);
+      } else if (commentAction === 'reject') {
+        await rejectBudgetRequest(id, comment.trim() || undefined);
+      }
+      navigate(fromPage);
     } catch (err) {
       setError(err.message || String(err));
     } finally {
       setProcessing(false);
+      closeCommentModal();
     }
   }
 
@@ -72,21 +81,24 @@ export default function RequestDetailPage() {
             <p className="rd-sub">Submitted: {request.created_at ? new Date(request.created_at).toLocaleString() : '—'}</p>
           </div>
           <div className="rd-header-actions">
-            <button onClick={() => navigate('/admin/pending-requests')} className="rd-btn rd-back">Back</button>
+            <button onClick={() => navigate(fromPage)} className="rd-btn rd-back">Back</button>
           </div>
         </header>
 
         <section className="rd-grid">
           <div className="rd-info">
             <dl>
-              <dt>City</dt>
-              <dd>{request.city_name || '—'}</dd>
+              <dt>Status</dt>
+              <dd><span className={`rd-status rd-status-${request.status?.toLowerCase()}`}>{request.status || '—'}</span></dd>
 
-              <dt>Month</dt>
+              <dt>Date</dt>
               <dd>{request.month || '—'}</dd>
 
-              <dt>Requester</dt>
-              <dd>{request.requester_name || '—'} {request.requester_email ? <span className="rd-email">({request.requester_email})</span> : null}</dd>
+              <dt>Amount Requested</dt>
+              <dd className="rd-amount">${(request.event?.total_amount || request.breakdown_lines?.reduce((sum, line) => sum + (line.amount || 0), 0) || 0).toFixed(2)}</dd>
+
+              <dt>Created</dt>
+              <dd>{request.created_at ? new Date(request.created_at).toLocaleDateString() : '—'}</dd>
             </dl>
           </div>
 
@@ -96,13 +108,95 @@ export default function RequestDetailPage() {
           </div>
         </section>
 
-        <footer className="rd-actions">
-          <div className="rd-action-left">
-            <button onClick={handleApprove} disabled={processing} className="rd-btn rd-approve">{processing ? 'Processing…' : 'Approve'}</button>
-            <button onClick={handleReject} disabled={processing} className="rd-btn rd-reject">{processing ? 'Processing…' : 'Reject'}</button>
-          </div>
-        </footer>
+        {request.event_name && (
+          <section className="rd-event">
+            <h3>Event Details</h3>
+            <dl>
+              <dt>Event Name</dt>
+              <dd>{request.event_name}</dd>
+
+              {request.event_date && (
+                <>
+                  <dt>Event Date</dt>
+                  <dd>{new Date(request.event_date).toLocaleDateString()}</dd>
+                </>
+              )}
+
+              {request.event_notes && (
+                <>
+                  <dt>Event Notes</dt>
+                  <dd>{request.event_notes}</dd>
+                </>
+              )}
+            </dl>
+          </section>
+        )}
+
+        {request.breakdown_lines && request.breakdown_lines.length > 0 && (
+          <section className="rd-breakdown">
+            <h3>Budget Breakdown</h3>
+            <table className="rd-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Description</th>
+                  <th className="rd-amount-col">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {request.breakdown_lines.map((line) => (
+                  <tr key={line.line_number}>
+                    <td>{line.line_number}</td>
+                    <td>{line.description}</td>
+                    <td className="rd-amount-col">${line.amount?.toFixed(2) || '0.00'}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td colSpan="2"><strong>Total</strong></td>
+                  <td className="rd-amount-col"><strong>${(request.event?.total_amount || request.breakdown_lines?.reduce((sum, line) => sum + (line.amount || 0), 0) || 0).toFixed(2)}</strong></td>
+                </tr>
+              </tfoot>
+            </table>
+          </section>
+        )}
+
+        {request.status === 'PENDING' && (
+          <footer className="rd-actions">
+            <div className="rd-action-left">
+              <button onClick={() => openCommentModal('approve')} disabled={processing} className="rd-btn rd-approve">{processing ? 'Processing…' : 'Approve'}</button>
+              <button onClick={() => openCommentModal('reject')} disabled={processing} className="rd-btn rd-reject">{processing ? 'Processing…' : 'Reject'}</button>
+            </div>
+          </footer>
+        )}
       </div>
+
+      {showCommentModal && (
+        <div className="rd-modal-overlay" onClick={closeCommentModal}>
+          <div className="rd-modal" onClick={(e) => e.stopPropagation()}>
+            <h2>{commentAction === 'approve' ? 'Approve Request' : 'Reject Request'}</h2>
+            <label className="rd-comment-label">Comment</label>
+            <textarea
+              className="rd-comment-input"
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              placeholder=""
+              rows="4"
+            />
+            <div className="rd-modal-actions">
+              <button onClick={closeCommentModal} className="rd-btn rd-secondary">Cancel</button>
+              <button 
+                onClick={handleSubmitWithComment} 
+                className={`rd-btn ${commentAction === 'approve' ? 'rd-approve' : 'rd-reject'}`}
+                disabled={processing}
+              >
+                {processing ? 'Processing…' : (commentAction === 'approve' ? 'Approve' : 'Reject')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
