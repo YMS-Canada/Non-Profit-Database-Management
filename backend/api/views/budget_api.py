@@ -528,6 +528,21 @@ def api_admin_dashboard(request):
             'total': row[3] or 0,
         }
         
+        # Get total users count
+        cur.execute("SELECT COUNT(*) FROM users;")
+        total_users = cur.fetchone()[0] or 0
+        stats['total_users'] = total_users
+        
+        # Get total approved amount
+        cur.execute("""
+            SELECT COALESCE(SUM(re.total_amount), 0)
+            FROM budget_request br
+            LEFT JOIN requested_event re ON re.request_id = br.request_id
+            WHERE br.status = 'APPROVED';
+        """)
+        approved_amount = cur.fetchone()[0] or 0
+        stats['approved_amount'] = float(approved_amount)
+        
         # Get pending requests
         cur.execute("""
             SELECT br.request_id,
