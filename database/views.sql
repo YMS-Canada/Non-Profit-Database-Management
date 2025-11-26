@@ -2,12 +2,12 @@ CREATE OR REPLACE VIEW vw_total_requested_per_city_month AS
 SELECT
   c.city_id,
   c.name AS city,
-  br.month,
+  TO_CHAR(br.month, 'YYYY-MM') AS month,
   COALESCE(SUM(re.total_amount),0) AS total_requested
 FROM budget_request br
 JOIN requested_event re ON re.request_id = br.request_id
 JOIN city c ON c.city_id = br.city_id
-GROUP BY c.city_id, c.name, br.month;
+GROUP BY c.city_id, c.name, TO_CHAR(br.month, 'YYYY-MM');
 
 CREATE OR REPLACE VIEW vw_event_expenses AS
 SELECT

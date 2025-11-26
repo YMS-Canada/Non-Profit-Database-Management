@@ -59,7 +59,7 @@ export default function PendingRequestsPage() {
                   <div className="req-city">{req.city_name}</div>
                 </div>
                 <div className="req-body">
-                  <div className="req-item"><strong>Month:</strong> {req.month || '—'}</div>
+                  <div className="req-item"><strong>Date:</strong> {req.month || '—'}</div>
                   <div className="req-item"><strong>Amount:</strong> {req.amount ? `$${req.amount.toFixed(2)}` : '—'}</div>
                   <div className="req-desc">{req.description || 'No description provided.'}</div>
                 </div>
@@ -90,7 +90,7 @@ export default function PendingRequestsPage() {
                   <div className="req-city">{req.city_name}</div>
                 </div>
                 <div className="req-body">
-                  <div className="req-item"><strong>Month:</strong> {req.month || '—'}</div>
+                  <div className="req-item"><strong>Date:</strong> {req.month || '—'}</div>
                   <div className="req-item"><strong>Amount:</strong> {req.amount ? `$${req.amount.toFixed(2)}` : '—'}</div>
                   <div className="req-desc">{req.description || 'No description provided.'}</div>
                 </div>
