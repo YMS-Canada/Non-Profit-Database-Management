@@ -170,3 +170,6 @@ CREATE INDEX idx_petty_cash_expense_pcs_id ON petty_cash_expense(pcs_id);
 CREATE INDEX idx_cash_collection_city_id ON cash_collection(city_id);
 CREATE INDEX idx_deposit_collection_id ON deposit(collection_id);
 CREATE INDEX idx_disbursement_request_id ON disbursement(request_id);
+CREATE INDEX IF NOT EXISTS idx_budget_request_status ON budget_request(status);
+CREATE INDEX IF NOT EXISTS idx_budget_request_month ON budget_request(month);
+CREATE INDEX IF NOT EXISTS idx_budget_request_city ON budget_request(city_id);
