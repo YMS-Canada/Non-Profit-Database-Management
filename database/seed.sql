@@ -25,8 +25,10 @@ INSERT INTO category (name) VALUES
 ('Supplies'), ('Decor'), ('Food');
 
 INSERT INTO users (name, email, whatsapp, role, password_hash, city_id) VALUES
-('Fatima','fatima@example.com','1234567890','TREASURER','random123',1),
-('Zainab','zainab@example.com','0987654321','ADMIN','random321',1);
+('Fatima','fatima@example.com','1234567890','TREASURER','pbkdf2_sha256$1000000$7DMpLWcVIn4MiSJYxKXErr$RVVi35RIsb6d4iO5CGHrUC3D670l+n+CE7e/RGvywBo=',1),
+('Zainab','zainab@example.com','0987654321','ADMIN','pbkdf2_sha256$1000000$MOPZ47Qsw6vSDeW1UFgn6W$vHUG4iX0lksqMLksG6vZXbMOLvw5OIE+xaFs5vspbt4=',1);
+-- Fatima password = random123
+-- Zainab password = random321
 
 INSERT INTO budget_request (city_id, requester_id, recipient_id, month, description, status) VALUES
 (1, 1, 2,'2025-11-01','Paint Night','PENDING');

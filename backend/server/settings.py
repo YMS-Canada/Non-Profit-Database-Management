@@ -25,6 +25,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv('SECRET_KEY', "dev-secret-key-change-me-if-you-env-it-wrong")
 
 # SECURITY WARNING: don't run with debug turned on in production!
+# In production:
+# - DEBUG must be set to 'False'
+# - ALLOWED_HOSTS must be set to our real domain(s)
+
+
 DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '*').split(',') if os.getenv('ALLOWED_HOSTS') else ['*']
@@ -52,6 +57,7 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 # Allow all Codespaces URLs
+# CORS = Cross-Origin Resource Sharing. (Browsers block cross-site HTTP requests by default for security.)
 CORS_ALLOW_ALL_ORIGINS = os.getenv('CODESPACES', 'false').lower() == 'true'
 
 CORS_ALLOW_CREDENTIALS = True
@@ -141,6 +147,11 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+PASSWORD_HASHERS = [
+    'django.contrib.auth.hashers.PBKDF2PasswordHasher',      # pbkdf2_sha256
+    'django.contrib.auth.hashers.Argon2PasswordHasher',      # optional if installed
+    'django.contrib.auth.hashers.BCryptSHA256PasswordHasher',
+]
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
@@ -171,6 +182,7 @@ LOGIN_REDIRECT_URL = '/dashboard/'
 SESSION_COOKIE_SECURE = os.getenv('SESSION_COOKIE_SECURE', 'False') == 'True'
 SESSION_COOKIE_SAMESITE = 'None' if SESSION_COOKIE_SECURE else 'Lax'
 
+# CSRF = Cross-Site Request Forgery
 CSRF_COOKIE_SECURE = SESSION_COOKIE_SECURE
 CSRF_COOKIE_SAMESITE = SESSION_COOKIE_SAMESITE
 

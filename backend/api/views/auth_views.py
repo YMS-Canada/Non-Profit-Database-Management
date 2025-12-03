@@ -4,6 +4,8 @@ from django.contrib import messages
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import json
+from django.contrib.auth.hashers import make_password, check_password
+from django.db import transaction
 
 # ---------- Helpers ----------
 
@@ -40,26 +42,31 @@ def login_view(request):
 
         with connection.cursor() as cur:
             cur.execute("""
-                SELECT user_id, role, city_id
+                SELECT user_id, role, city_id, password_hash
                 FROM users
                 WHERE email = %s
-                  AND password_hash = %s
-                  AND is_active = TRUE
-            """, [email, password])
+                AND is_active = TRUE
+            """, [email])
             row = cur.fetchone()
 
         if not row:
             messages.error(request, "Invalid email or password.")
             return render(request, 'login.html')
 
-        request.session['user_id'] = row[0]
-        request.session['role'] = row[1]
-        request.session['city_id'] = row[2]
+        user_id, role, city_id, stored_hash = row
 
-        # Role-based redirect
-        if row[1] == 'ADMIN':
+        if not check_password(password, stored_hash):  # <<< PBKDF2 verification here
+            messages.error(request, "Invalid email or password.")
+            return render(request, 'login.html')
+
+        # If we get here: password is correct
+        request.session['user_id'] = user_id
+        request.session['role'] = role
+        request.session['city_id'] = city_id
+
+        if role == 'ADMIN':
             return redirect('admin_dashboard')
-        elif row[1] == 'TREASURER':
+        elif role == 'TREASURER':
             return redirect('treasurer_dashboard')
         else:
             return redirect('home')
@@ -93,12 +100,15 @@ def create_account(request):
             messages.error(request, "Name, email, password, and city are required.")
             return render(request, 'admin/create_account.html')
 
+
         with connection.cursor() as cur:
             try:
+                pw_hash = make_password(password)  # <<< PBKDF2 happens here
                 cur.execute("""
                     INSERT INTO users (name, email, whatsapp, role, password_hash, city_id, invited_at, is_active)
                     VALUES (%s, %s, %s, %s, %s, %s, NOW(), TRUE)
-                """, [name, email, whatsapp, role, password, city_id])
+                """, [name, email, whatsapp, role, pw_hash, city_id])
+
                 messages.success(request, "User account created successfully.")
                 return redirect('home')
             except Exception as e:
@@ -275,33 +285,38 @@ def api_login(request):
     
     with connection.cursor() as cur:
         cur.execute("""
-            SELECT u.user_id, u.name, u.email, u.role, u.city_id, c.name as city_name
+            SELECT u.user_id, u.name, u.email, u.role, u.city_id, c.name as city_name, u.password_hash
             FROM users u
             LEFT JOIN city c ON c.city_id = u.city_id
             WHERE u.email = %s
-              AND u.password_hash = %s
-              AND u.is_active = TRUE
-        """, [email, password])
+            AND u.is_active = TRUE
+        """, [email])
         row = cur.fetchone()
-    
+
     if not row:
         return JsonResponse({'error': 'Invalid email or password'}, status=401)
-    
+
+    user_id, name, email, role, city_id, city_name, stored_hash = row
+
+    if not check_password(password, stored_hash):  # <<< PBKDF2 verification
+        return JsonResponse({'error': 'Invalid email or password'}, status=401)
+
     # Set session
-    request.session['user_id'] = row[0]
-    request.session['role'] = row[3]
-    request.session['city_id'] = row[4]
-    
+    request.session['user_id'] = user_id
+    request.session['role'] = role
+    request.session['city_id'] = city_id
+
     return JsonResponse({
         'user': {
-            'user_id': row[0],
-            'name': row[1],
-            'email': row[2],
-            'role': row[3],
-            'city_id': row[4],
-            'city_name': row[5],
+            'user_id': user_id,
+            'name': name,
+            'email': email,
+            'role': role,
+            'city_id': city_id,
+            'city_name': city_name,
         }
     })
+
 
 def api_current_user(request):
     """API endpoint to get current logged-in user info"""
@@ -388,11 +403,12 @@ def api_create_user(request):
     
     with connection.cursor() as cur:
         try:
+            pw_hash = make_password(password)  # <<< PBKDF2 here too
             cur.execute("""
                 INSERT INTO users (name, email, whatsapp, role, password_hash, city_id, invited_at, is_active)
                 VALUES (%s, %s, %s, %s, %s, %s, NOW(), TRUE)
                 RETURNING user_id, name, email, role, city_id
-            """, [name, email, whatsapp, role, password, city_id_int])
+            """, [name, email, whatsapp, role, pw_hash, city_id_int])
             row = cur.fetchone()
             
             return JsonResponse({
