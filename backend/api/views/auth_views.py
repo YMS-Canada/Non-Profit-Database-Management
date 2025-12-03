@@ -382,7 +382,7 @@ def api_create_user(request):
         data = json.loads(request.body)
         name = data.get('name', '').strip()
         email = data.get('email', '').strip()
-        whatsapp = data.get('whatsapp', '').strip()
+        whatsapp = (data.get('whatsapp') or '').strip()
         role = data.get('role', '').strip()
         city_id = data.get('city_id')
         password = data.get('password', '').strip()
